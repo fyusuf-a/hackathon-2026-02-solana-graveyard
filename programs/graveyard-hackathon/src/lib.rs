@@ -4,6 +4,7 @@ declare_id!("FMbPxmEm3fDtPzH8RTpqWx9xT1bd3Bio38vg7MrXr9Rv");
 
 mod instructions;
 mod state;
+mod utils;
 
 use instructions::*;
 
@@ -13,5 +14,9 @@ pub mod graveyard_hackathon {
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         ctx.accounts.initialize(&ctx.bumps)
+    }
+
+    pub fn create_auction(ctx: Context<CreateAuction>, start_time: i64, deadline: i64, min_price: u64, min_increment: u64) -> Result<()> {
+        ctx.accounts.create(start_time, deadline, min_price, min_increment, &ctx.bumps)
     }
 }

@@ -1,5 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorProvider } from "@coral-xyz/anchor";
+import { createNft as metaplexCreateNft } from "@metaplex-foundation/mpl-token-metadata";
+import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+
+export const ONE_SECOND = 1000;
 
 export async function airdrop_if_needed(provider: AnchorProvider, publicKey: anchor.web3.PublicKey, amount: number) {
   const balance = await provider.connection.getBalance(publicKey);
@@ -12,5 +16,24 @@ export async function airdrop_if_needed(provider: AnchorProvider, publicKey: anc
     }, "confirmed")
   }
 }
+
+export async function createNft(umi) {
+  try {
+    const nftMint = generateSigner(umi);
+    await metaplexCreateNft(umi, {
+      mint: nftMint,
+      name: "GM",
+      symbol: "GM",
+      uri: "https://arweave.net/123",
+      sellerFeeBasisPoints: percentAmount(5.5),
+    }).sendAndConfirm(umi);
+
+    return nftMint;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
 
 export const admin = anchor.web3.Keypair.generate();
