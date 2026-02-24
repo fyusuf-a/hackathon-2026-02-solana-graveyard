@@ -6,6 +6,7 @@ use anchor_spl::{
 use crate::{state::Auction, utils::{FundAccountArgs, NoData, fund_account}};
 
 #[derive(Accounts)]
+#[instruction(seed: u64)]
 pub struct CreateAuction<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
@@ -19,7 +20,7 @@ pub struct CreateAuction<'info> {
     pub user_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = user,
         associated_token::mint = mint,
         associated_token::authority = auction,
@@ -30,16 +31,16 @@ pub struct CreateAuction<'info> {
     #[account(
         init,
         payer = user,
-        seeds = [b"auction", mint.key().as_ref()],
+        seeds = [b"auction", seed.to_le_bytes().as_ref()],
         space = Auction::DISCRIMINATOR.len() + Auction::INIT_SPACE,
         bump,
     )]
     pub auction: Account<'info, Auction>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = user,
-        seeds = [b"vault", mint.key().as_ref()],
+        seeds = [b"vault", seed.to_le_bytes().as_ref()],
         space = 0,
         bump,
     )]
@@ -52,7 +53,7 @@ pub struct CreateAuction<'info> {
 }
 
 impl<'info> CreateAuction<'info> {
-    pub fn create(&mut self, start_time: i64, deadline: i64, min_price: u64, min_increment: u64, bumps: &CreateAuctionBumps) -> Result<()> {
+    pub fn create(&mut self, seed: u64, start_time: i64, deadline: i64, min_price: u64, min_increment: u64, bumps: &CreateAuctionBumps) -> Result<()> {
         self.auction.set_inner(Auction {
             start_time,
             deadline,

@@ -16,7 +16,7 @@ pub mod graveyard_hackathon {
         ctx.accounts.initialize(&ctx.bumps)
     }
 
-    pub fn create_auction(ctx: Context<CreateAuction>, start_time: i64, deadline: i64, min_price: u64, min_increment: u64) -> Result<()> {
-        ctx.accounts.create(start_time, deadline, min_price, min_increment, &ctx.bumps)
+    pub fn create_auction(ctx: Context<CreateAuction>, seed: u64, start_time: i64, deadline: i64, min_price: u64, min_increment: u64) -> Result<()> {
+        ctx.accounts.create(seed, start_time, deadline, min_price, min_increment, &ctx.bumps)
     }
 }

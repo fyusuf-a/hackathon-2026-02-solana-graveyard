@@ -5,6 +5,10 @@ import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
 
 export const ONE_SECOND = 1000;
 
+export function randomBN(max: number, rng = Math.random) {
+  return new anchor.BN(Math.floor(rng() * max));
+}
+
 export async function airdrop_if_needed(provider: AnchorProvider, publicKey: anchor.web3.PublicKey, amount: number) {
   const balance = await provider.connection.getBalance(publicKey);
   if (balance === 0) {

@@ -3,7 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { generateSigner, KeypairSigner, signerIdentity } from "@metaplex-foundation/umi";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
-import { airdrop_if_needed, createNft, ONE_SECOND } from './lib';
+import { airdrop_if_needed, createNft, ONE_SECOND, randomBN } from './lib';
 import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { Keypair } from "@solana/web3.js";
@@ -24,6 +24,7 @@ anchor.setProvider(provider);
 
 const program = anchor.workspace.GraveyardHackathon as Program<GraveyardHackathon>;
 
+const seed = randomBN(1000);
 let nftMint: KeypairSigner;
 let userAta: anchor.web3.PublicKey;
 let vaultAta: anchor.web3.PublicKey;
@@ -35,7 +36,7 @@ describe("Auction creation", () => {
     await airdrop_if_needed(provider, toWeb3JsPublicKey(auctioneer.publicKey), 5);
     nftMint  = await createNft(umi);
 
-    auction = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('auction'), toWeb3JsPublicKey(nftMint.publicKey).toBuffer()], program.programId)[0];
+    auction = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('auction'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
 
     const vaultAtaAccount = await getOrCreateAssociatedTokenAccount(
         provider.connection,
@@ -48,12 +49,13 @@ describe("Auction creation", () => {
     vaultAta = vaultAtaAccount.address;
 
     userAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
-    vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), toWeb3JsPublicKey(nftMint.publicKey).toBuffer()], program.programId)[0];
+    vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
   });
 
   it("Creates an auction", async () => {
 
     await program.methods.createAuction(
+      seed,
       new BN(30 * ONE_SECOND),
       new BN(60 * ONE_SECOND),
       new BN(0),
