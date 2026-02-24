@@ -38,15 +38,7 @@ describe("Auction creation", () => {
 
     auction = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('auction'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
 
-    const vaultAtaAccount = await getOrCreateAssociatedTokenAccount(
-        provider.connection,
-        web3JsSigner,
-        toWeb3JsPublicKey(nftMint.publicKey),
-        auction,
-        true,
-      );
-
-    vaultAta = vaultAtaAccount.address;
+    vaultAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), auction, true);
 
     userAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
     vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
