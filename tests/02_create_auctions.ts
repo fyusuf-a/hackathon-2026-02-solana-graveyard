@@ -9,6 +9,7 @@ import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { Keypair } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { expect } from "chai";
 
 const provider = anchor.AnchorProvider.env();
 
@@ -24,8 +25,10 @@ anchor.setProvider(provider);
 const program = anchor.workspace.GraveyardHackathon as Program<GraveyardHackathon>;
 
 let nftMint: KeypairSigner;
+let userAta: anchor.web3.PublicKey;
 let vaultAta: anchor.web3.PublicKey;
 let auction: anchor.web3.PublicKey;
+let vault: anchor.web3.PublicKey;
 
 describe("Auction creation", () => {
   before(async () => {
@@ -43,11 +46,12 @@ describe("Auction creation", () => {
       );
 
     vaultAta = vaultAtaAccount.address;
+
+    userAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
+    vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), toWeb3JsPublicKey(nftMint.publicKey).toBuffer()], program.programId)[0];
   });
 
   it("Creates an auction", async () => {
-    const userAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
-    const vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), toWeb3JsPublicKey(nftMint.publicKey).toBuffer()], program.programId)[0];
 
     await program.methods.createAuction(
       new BN(30 * ONE_SECOND),
@@ -56,7 +60,7 @@ describe("Auction creation", () => {
       new BN(0)
     )
       .accountsStrict({
-        payer: auctioneer.publicKey,
+        user: auctioneer.publicKey,
         mint: nftMint.publicKey,
         userAta,
         vaultAta,
@@ -68,5 +72,29 @@ describe("Auction creation", () => {
       })
       .signers([web3JsSigner])
       .rpc();
+  });
+
+  it("After auction creation, the token should be transfered from user to NFT vault", async () => {
+
+    const vaultAtaAccount = await provider.connection.getParsedAccountInfo(vaultAta);
+    const vaultAtaData = vaultAtaAccount?.value?.data as anchor.web3.ParsedAccountData;
+    const vaultTokenAmount = vaultAtaData.parsed.info.tokenAmount.uiAmount;
+    
+    const userAtaAccount = await provider.connection.getParsedAccountInfo(userAta);
+    const userAtaData = userAtaAccount?.value?.data as anchor.web3.ParsedAccountData;
+    const userTokenAmount = userAtaData.parsed.info.tokenAmount.uiAmount;
+
+    expect(vaultTokenAmount).to.equal(1);
+    expect(userTokenAmount).to.equal(0);
+  });
+
+  it("After auction creation, the SOL vault is rent-exempt", async () => {
+    const [minBalance, vaultBalance] = await Promise.all([
+      provider.connection.getMinimumBalanceForRentExemption(0),
+      provider.connection.getBalance(vault),
+    ]);
+    
+    // The vault should be rent-exempt, which is around 89088 lamports at the time of writing
+    expect(vaultBalance).to.be.gte(minBalance);
   });
 });

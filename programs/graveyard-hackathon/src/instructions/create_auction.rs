@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}
+    associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface, transfer_checked, TransferChecked}
 };
 
 use crate::{state::Auction, utils::{FundAccountArgs, NoData, fund_account}};
@@ -8,19 +8,19 @@ use crate::{state::Auction, utils::{FundAccountArgs, NoData, fund_account}};
 #[derive(Accounts)]
 pub struct CreateAuction<'info> {
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub user: Signer<'info>,
     pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
         associated_token::mint = mint,
-        associated_token::authority = payer,
+        associated_token::authority = user,
     )]
     pub user_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init_if_needed,
-        payer = payer,
+        payer = user,
         associated_token::mint = mint,
         associated_token::authority = auction,
         associated_token::token_program = token_program,
@@ -29,7 +29,7 @@ pub struct CreateAuction<'info> {
 
     #[account(
         init,
-        payer = payer,
+        payer = user,
         seeds = [b"auction", mint.key().as_ref()],
         space = Auction::DISCRIMINATOR.len() + Auction::INIT_SPACE,
         bump,
@@ -38,7 +38,7 @@ pub struct CreateAuction<'info> {
 
     #[account(
         init_if_needed,
-        payer = payer,
+        payer = user,
         seeds = [b"vault", mint.key().as_ref()],
         space = 0,
         bump,
@@ -61,17 +61,21 @@ impl<'info> CreateAuction<'info> {
             current_bid: None,
             min_increment,
             mint: self.mint.key(),
-            maker: self.payer.key(),
+            maker: self.user.key(),
             bump: bumps.auction,
             vault_bump: bumps.vault,
         });
-        Ok(())
 
-        //fund_account(FundAccountArgs {
-            //payer: self.payer.to_account_info(),
-            //account: self.vault.to_account_info(),
-            //system_account: self.system_program.to_account_info(),
-            //data: NoData,
-        //})
+        // transfer NFT from user to vault ATA
+        let cpi_program = self.token_program.to_account_info();
+
+        let cpi_accounts = TransferChecked {
+            from: self.user_ata.to_account_info(),
+            to: self.vault_ata.to_account_info(),
+            mint: self.mint.to_account_info(),
+            authority: self.user.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        transfer_checked(cpi_ctx, 1, 0)
     }
 }
