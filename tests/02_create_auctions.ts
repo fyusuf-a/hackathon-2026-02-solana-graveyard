@@ -2,16 +2,16 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { generateSigner, KeypairSigner, signerIdentity } from "@metaplex-foundation/umi";
-import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
-import { airdrop_if_needed, createNft, ONE_SECOND, randomBN } from './lib';
+import { setupAuction, ONE_SECOND } from './lib';
 import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { Keypair } from "@solana/web3.js";
 import { BN } from "bn.js";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { expect } from "chai";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 
 const provider = anchor.AnchorProvider.env();
+anchor.setProvider(provider);
 
 const umi = createUmi(provider.connection);
 const auctioneer = generateSigner({ eddsa: umi.eddsa });
@@ -20,28 +20,19 @@ const web3JsSigner = Keypair.fromSecretKey(secretKey);
 
 umi.use(signerIdentity(auctioneer));
 umi.use(mplTokenMetadata());
-anchor.setProvider(provider);
 
 const program = anchor.workspace.GraveyardHackathon as Program<GraveyardHackathon>;
 
-const seed = randomBN(1000);
+let seed: anchor.BN;
 let nftMint: KeypairSigner;
-let userAta: anchor.web3.PublicKey;
+let auctioneerAta: anchor.web3.PublicKey;
 let vaultAta: anchor.web3.PublicKey;
 let auction: anchor.web3.PublicKey;
 let vault: anchor.web3.PublicKey;
 
 describe("Auction creation", () => {
   before(async () => {
-    await airdrop_if_needed(provider, toWeb3JsPublicKey(auctioneer.publicKey), 5);
-    nftMint  = await createNft(umi);
-
-    auction = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('auction'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
-
-    vaultAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), auction, true);
-
-    userAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
-    vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
+    ({seed, nftMint, auctioneerAta, vaultAta, auction, vault} = await setupAuction(provider, umi, program, auctioneer));
   });
 
   it("Creates an auction", async () => {
@@ -56,7 +47,7 @@ describe("Auction creation", () => {
       .accountsStrict({
         user: auctioneer.publicKey,
         mint: nftMint.publicKey,
-        userAta,
+        userAta: auctioneerAta,
         vaultAta,
         auction,
         vault,
@@ -74,7 +65,7 @@ describe("Auction creation", () => {
     const vaultAtaData = vaultAtaAccount?.value?.data as anchor.web3.ParsedAccountData;
     const vaultTokenAmount = vaultAtaData.parsed.info.tokenAmount.uiAmount;
     
-    const userAtaAccount = await provider.connection.getParsedAccountInfo(userAta);
+    const userAtaAccount = await provider.connection.getParsedAccountInfo(auctioneerAta);
     const userAtaData = userAtaAccount?.value?.data as anchor.web3.ParsedAccountData;
     const userTokenAmount = userAtaData.parsed.info.tokenAmount.uiAmount;
 

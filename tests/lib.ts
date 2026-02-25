@@ -1,7 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { createNft as metaplexCreateNft } from "@metaplex-foundation/mpl-token-metadata";
-import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+import { generateSigner, KeypairSigner, percentAmount, Signer, Umi } from "@metaplex-foundation/umi";
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
 
 export const ONE_SECOND = 1000;
 
@@ -39,5 +42,36 @@ export async function createNft(umi) {
   }
 }
 
-
 export const admin = anchor.web3.Keypair.generate();
+
+type AuctionConfigResult = {
+  seed: anchor.BN;
+  nftMint: KeypairSigner;
+  auctioneerAta: anchor.web3.PublicKey;
+  vaultAta: anchor.web3.PublicKey;
+  auction: anchor.web3.PublicKey;
+  vault: anchor.web3.PublicKey;
+}
+
+export async function setupAuction(provider: anchor.AnchorProvider, umi: Umi, program: anchor.Program<GraveyardHackathon>, auctioneer: Signer): Promise<AuctionConfigResult> {
+  await airdrop_if_needed(provider, toWeb3JsPublicKey(auctioneer.publicKey), 5);
+
+  const nftMint = await createNft(umi);
+  const seed = randomBN(1000);
+
+  const auction = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('auction'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
+
+  const vaultAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), auction, true);
+
+  const auctioneerAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
+  const vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
+  
+  return {
+    seed,
+    nftMint,
+    auctioneerAta,
+    vaultAta,
+    auction,
+    vault
+  }
+}
