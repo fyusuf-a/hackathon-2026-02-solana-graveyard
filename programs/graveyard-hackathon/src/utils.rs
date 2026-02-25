@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use anchor_lang::{prelude::*, system_program::{Transfer, transfer}};
 
 pub struct FundAccountArgs<'info> {

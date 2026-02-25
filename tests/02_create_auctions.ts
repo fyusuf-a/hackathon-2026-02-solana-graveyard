@@ -5,7 +5,6 @@ import { generateSigner, KeypairSigner, signerIdentity } from "@metaplex-foundat
 import { setupAuction, ONE_SECOND } from './lib';
 import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
 import { Keypair } from "@solana/web3.js";
-import { BN } from "bn.js";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { expect } from "chai";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
@@ -39,10 +38,10 @@ describe("Auction creation", () => {
 
     await program.methods.createAuction(
       seed,
-      new BN(30 * ONE_SECOND),
-      new BN(60 * ONE_SECOND),
-      new BN(0),
-      new BN(0)
+      new anchor.BN(30 * ONE_SECOND),
+      new anchor.BN(60 * ONE_SECOND),
+      new anchor.BN(0),
+      new anchor.BN(0)
     )
       .accountsStrict({
         user: auctioneer.publicKey,

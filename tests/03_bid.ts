@@ -7,7 +7,6 @@ import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
 import { ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { Keypair } from "@solana/web3.js";
-import { BN } from "bn.js";
 import assert from "node:assert/strict";
 import { setupAuction } from "./lib";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
@@ -53,10 +52,10 @@ describe("Bids", () => {
     auctionEnd = time + 10;
     await program.methods.createAuction(
       seed,
-      new BN(auctionStart),
-      new BN(auctionEnd),
-      new BN(0),
-      new BN(0)
+      new anchor.BN(auctionStart),
+      new anchor.BN(auctionEnd),
+      new anchor.BN(0),
+      new anchor.BN(0)
     )
       .accountsStrict({
         user: auctioneer.publicKey,
@@ -77,7 +76,7 @@ describe("Bids", () => {
     it("No bet can be made", async () => {
       umi.use(signerIdentity(bidder1));
       await assert.rejects(async () => {
-        await program.methods.bid(seed, new BN(1))
+        await program.methods.bid(seed, new anchor.BN(1))
           .accountsStrict({
             bidder: bidder1.publicKey,
             auction,
@@ -100,7 +99,7 @@ describe("Bids", () => {
     });
 
     it("A bet can be made", async () => {
-      await program.methods.bid(seed, new BN(1))
+      await program.methods.bid(seed, new anchor.BN(1))
         .accountsStrict({
           bidder: bidder1.publicKey,
           auction,
@@ -120,7 +119,7 @@ describe("Bids", () => {
     it("A bet cannot be made if its amount is lesser or equal than the current bet", async () => {
       umi.use(signerIdentity(bidder2));
       await assert.rejects(async () => {
-        await program.methods.bid(seed, new BN(1))
+        await program.methods.bid(seed, new anchor.BN(1))
           .accountsStrict({
             bidder: bidder2.publicKey,
             auction,
@@ -135,7 +134,7 @@ describe("Bids", () => {
 
     it("A bet can be made if its amount is greater than the current bet", async () => {
         umi.use(signerIdentity(bidder2));
-        await program.methods.bid(seed, new BN(2))
+        await program.methods.bid(seed, new anchor.BN(2))
           .accountsStrict({
             bidder: bidder2.publicKey,
             auction,

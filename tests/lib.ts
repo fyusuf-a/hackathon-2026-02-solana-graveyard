@@ -2,8 +2,8 @@ import * as anchor from "@coral-xyz/anchor";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { createNft as metaplexCreateNft } from "@metaplex-foundation/mpl-token-metadata";
 import { generateSigner, KeypairSigner, percentAmount, Signer, signerIdentity, Umi } from "@metaplex-foundation/umi";
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { toWeb3JsKeypair, toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
 
 export const ONE_SECOND = 1000;
@@ -24,7 +24,7 @@ export async function airdrop_if_needed(provider: AnchorProvider, publicKey: anc
   }
 }
 
-export async function createNft(umi) {
+export async function createNft(umi: Umi): Promise<KeypairSigner> {
   try {
     const nftMint = generateSigner(umi);
     await metaplexCreateNft(umi, {
@@ -67,6 +67,47 @@ export async function setupAuction(provider: anchor.AnchorProvider, umi: Umi, pr
   const auctioneerAta = getAssociatedTokenAddressSync(toWeb3JsPublicKey(nftMint.publicKey), toWeb3JsPublicKey(auctioneer.publicKey));
   const vault = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from('vault'), seed.toArrayLike(Buffer, "le", 8)], program.programId)[0];
   
+  return {
+    seed,
+    nftMint,
+    auctioneerAta,
+    vaultAta,
+    auction,
+    vault
+  }
+}
+
+export async function createAuction(
+  auctioneer: KeypairSigner,
+  startTime: number,
+  endTime: number,
+  program: anchor.Program<GraveyardHackathon>,
+  provider: anchor.AnchorProvider,
+  umi: Umi,
+) {
+  const { seed, nftMint, auctioneerAta, vaultAta, auction, vault} = await setupAuction(provider, umi, program, auctioneer);
+
+  await program.methods.createAuction(
+    seed,
+    new anchor.BN(startTime),
+    new anchor.BN(endTime),
+    new anchor.BN(0),
+    new anchor.BN(0)
+  )
+    .accountsStrict({
+      user: auctioneer.publicKey,
+      mint: nftMint.publicKey,
+      userAta: auctioneerAta,
+      vaultAta,
+      auction,
+      vault,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    })
+    .signers([toWeb3JsKeypair(auctioneer)])
+    .rpc();
+
   return {
     seed,
     nftMint,
