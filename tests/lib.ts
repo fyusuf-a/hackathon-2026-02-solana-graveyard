@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { createNft as metaplexCreateNft } from "@metaplex-foundation/mpl-token-metadata";
-import { generateSigner, KeypairSigner, percentAmount, Signer, Umi } from "@metaplex-foundation/umi";
+import { generateSigner, KeypairSigner, percentAmount, Signer, signerIdentity, Umi } from "@metaplex-foundation/umi";
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
@@ -54,6 +54,7 @@ type AuctionConfigResult = {
 }
 
 export async function setupAuction(provider: anchor.AnchorProvider, umi: Umi, program: anchor.Program<GraveyardHackathon>, auctioneer: Signer): Promise<AuctionConfigResult> {
+  umi.use(signerIdentity(auctioneer));
   await airdrop_if_needed(provider, toWeb3JsPublicKey(auctioneer.publicKey), 5);
 
   const nftMint = await createNft(umi);

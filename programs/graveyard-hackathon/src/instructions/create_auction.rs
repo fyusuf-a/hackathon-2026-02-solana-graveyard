@@ -38,14 +38,11 @@ pub struct CreateAuction<'info> {
     pub auction: Account<'info, Auction>,
 
     #[account(
-        init,
-        payer = user,
+        mut,
         seeds = [b"vault", seed.to_le_bytes().as_ref()],
-        space = 0,
         bump,
     )]
-    /// CHECK: new account owned by the program
-    pub vault: UncheckedAccount<'info>,
+    pub vault: SystemAccount<'info>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -77,6 +74,13 @@ impl<'info> CreateAuction<'info> {
             authority: self.user.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        transfer_checked(cpi_ctx, 1, 0)
+        transfer_checked(cpi_ctx, 1, 0)?;
+
+        // make the vault rent-exempt
+        fund_account::<NoData>(FundAccountArgs {
+            payer: self.user.to_account_info(),
+            account: self.vault.to_account_info(),
+            system_account: self.system_program.to_account_info(),
+        })
     }
 }
