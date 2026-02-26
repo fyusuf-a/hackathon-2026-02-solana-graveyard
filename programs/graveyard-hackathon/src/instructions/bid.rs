@@ -52,11 +52,18 @@ impl<'info> Bid<'info> {
         require!(current_time < self.auction.deadline, AuctionError::AuctionEnded);
 
         // check auction amount
-        let minimum = match self.auction.current_bid {
-            Some(current_bid) => current_bid + self.auction.min_increment,
-            None => self.auction.min_price,
+        match self.auction.current_bid {
+            Some(current_bid) => {
+                if self.auction.min_increment == 0 {
+                    require!(lamports > current_bid, AuctionError::BidTooLow);
+                } else {
+                    require!(lamports >= current_bid + self.auction.min_increment, AuctionError::BidTooLow);
+                }
+            }
+            None => {
+                require!(lamports >= self.auction.min_price, AuctionError::BidTooLow);
+            }
         };
-        require!(lamports >= minimum, AuctionError::BidTooLow);
 
         // refund preceding bidder
         require!(self.auction.current_bidder == self.preceding_bidder.clone().map(|x| x.key()), AuctionError::BadPrecedingBidder); 
