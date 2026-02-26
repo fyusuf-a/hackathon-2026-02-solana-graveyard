@@ -10,7 +10,7 @@ import {
   percentAmount,
   createSignerFromKeypair,
 } from "@metaplex-foundation/umi";
-import dummyKeypair from "../runbooks/dummy-keypair.json";
+import dummyKeypair from "../runbooks/dummy-keypair.json" with { type: 'json' };
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 
 const connection = new anchor.web3.Connection("http://localhost:8899");
