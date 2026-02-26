@@ -55,7 +55,8 @@ describe("Bids", () => {
       new anchor.BN(auctionStart),
       new anchor.BN(auctionEnd),
       new anchor.BN(0),
-      new anchor.BN(0)
+      new anchor.BN(0),
+      null,
     )
       .accountsStrict({
         user: auctioneer.publicKey,
@@ -82,6 +83,8 @@ describe("Bids", () => {
             auction,
             vault,
             precedingBidder: null,
+            referrerWhitelist: null,
+            referrer: null,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([web3JsBidder1Signer])
@@ -105,6 +108,8 @@ describe("Bids", () => {
           auction,
           vault,
           precedingBidder: null,
+          referrerWhitelist: null,
+          referrer: null,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([web3JsBidder1Signer])
@@ -113,7 +118,7 @@ describe("Bids", () => {
 
     it("The vault balance should increase", async () => {
       const balanceAfter = await provider.connection.getBalance(vault);
-      assert(balanceAfter > balanceBefore, "The vault balance should have increased");
+      assert(balanceAfter >= balanceBefore + 1, "The vault balance should have increased by one");
     });
 
     it("A bet cannot be made if its amount is lesser or equal than the current bet", async () => {
@@ -125,6 +130,8 @@ describe("Bids", () => {
             auction,
             vault,
             precedingBidder: bidder1.publicKey,
+            referrerWhitelist: null,
+            referrer: null,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([web3JsBidder2Signer])
@@ -140,6 +147,8 @@ describe("Bids", () => {
             auction,
             vault,
             precedingBidder: toWeb3JsPublicKey(bidder1.publicKey),
+            referrerWhitelist: null,
+            referrer: null,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([web3JsBidder2Signer])

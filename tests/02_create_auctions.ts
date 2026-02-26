@@ -41,7 +41,8 @@ describe("Auction creation", () => {
       new anchor.BN(30 * ONE_SECOND),
       new anchor.BN(60 * ONE_SECOND),
       new anchor.BN(0),
-      new anchor.BN(0)
+      new anchor.BN(0),
+      null,
     )
       .accountsStrict({
         user: auctioneer.publicKey,

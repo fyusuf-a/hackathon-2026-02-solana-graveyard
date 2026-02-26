@@ -92,7 +92,8 @@ export async function createAuction(
     new anchor.BN(startTime),
     new anchor.BN(endTime),
     new anchor.BN(0),
-    new anchor.BN(0)
+    new anchor.BN(0),
+    null,
   )
     .accountsStrict({
       user: auctioneer.publicKey,

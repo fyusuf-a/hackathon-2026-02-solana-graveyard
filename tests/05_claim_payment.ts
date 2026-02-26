@@ -70,6 +70,8 @@ describe("If a bid is made,", () => {
         auction,
         vault,
         precedingBidder: null,
+        referrerWhitelist: null,
+        referrer: null,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([web3JsBidder1Signer])
