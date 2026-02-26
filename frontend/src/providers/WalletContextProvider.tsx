@@ -1,7 +1,5 @@
 "use client";
 
-import "@solana/wallet-adapter-react-ui/styles.css";
-
 import { ReactNode, useMemo } from "react";
 import {
   ConnectionProvider,
@@ -14,7 +12,8 @@ import {
   CoinbaseWalletAdapter,
   LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl, Connection } from "@solana/web3.js";
+
+const LOCALNET_ENDPOINT = "http://localhost:8899";
 
 interface WalletContextProviderProps {
   children: ReactNode;
@@ -23,7 +22,7 @@ interface WalletContextProviderProps {
 export function WalletContextProvider({
   children,
 }: WalletContextProviderProps) {
-  const endpoint = useMemo(() => "http://localhost:8899", []);
+  const endpoint = useMemo(() => LOCALNET_ENDPOINT, []);
 
   const wallets = useMemo(
     () => [

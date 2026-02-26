@@ -3,8 +3,8 @@
 ################################################################
 
 addon "svm" {
-    rpc_api_url = "http://localhost:8999"
-    network_id = "localnet"
+    rpc_api_url = input.rpc_api_url
+    network_id = input.network_id
 }
 
 action "create_nfts" "ts::exec" {

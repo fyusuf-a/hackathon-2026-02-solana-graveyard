@@ -1,12 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export function Navbar() {
-  const { connected } = useWallet();
-
   return (
     <nav className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-800">
       <div className="flex items-center gap-6">
@@ -29,10 +26,7 @@ export function Navbar() {
           </Link>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        {connected && <span className="text-sm text-green-400">Connected</span>}
-        <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !transition-colors" />
-      </div>
+      <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !transition-colors" />
     </nav>
   );
 }

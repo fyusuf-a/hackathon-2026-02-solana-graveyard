@@ -1,9 +1,18 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useState } from "react";
+
+const DUMMY_PRIVATE_KEY =
+  "[193,11,54,70,20,164,26,134,77,241,66,165,140,31,1,205,109,172,93,58,111,65,17,180,40,70,76,183,81,66,183,90,65,13,157,165,17,255,210,129,73,203,18,201,104,32,5,231,54,153,254,2,111,32,24,26,153,115,244,14,237,198,174,176]";
 
 export default function Home() {
-  const { connected, publicKey } = useWallet();
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(DUMMY_PRIVATE_KEY);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] p-8">
@@ -12,23 +21,30 @@ export default function Home() {
           English Auction with Referrals
         </h1>
         <p className="text-lg text-gray-400">
-          A Solana-based English auction platform with an integrated referral
-          system. Connect your wallet to create auctions, place bids, and earn
-          commissions.
+          Use the following private key in your wallet that holds NFTs on the localnet:
         </p>
 
-        {connected && publicKey ? (
-          <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
-            <p className="text-sm text-gray-400">Connected Wallet</p>
-            <p className="text-purple-400 font-mono text-sm truncate">
-              {publicKey.toBase58()}
-            </p>
+        <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
+          <p className="text-sm text-gray-400 mb-2">Private Key</p>
+          <div className="flex items-center gap-2">
+            <code className="text-purple-400 font-mono text-sm break-all flex-1 text-left">
+              {DUMMY_PRIVATE_KEY}
+            </code>
+            <button
+              onClick={copyToClipboard}
+              className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors whitespace-nowrap"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
           </div>
-        ) : (
-          <div className="p-6 bg-gray-900 rounded-lg border border-gray-800">
-            <p className="text-gray-400">Connect your wallet to get started</p>
-          </div>
-        )}
+        </div>
+
+        <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
+          <p className="text-sm text-gray-400 mb-2">Public Key</p>
+          <code className="text-green-400 font-mono text-sm">
+            5NwYT5xMTdRwV1hQ3LMi81q4jHeYxzVKjUY67ExWWiTH
+          </code>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">
           <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">

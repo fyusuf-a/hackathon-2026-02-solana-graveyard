@@ -5,6 +5,9 @@ runbooks:
   - name: deployment
     description: Deploy programs
     location: runbooks/deployment
+  - name: create-nfts
+    description: Create NFTs
+    location: runbooks/create-nfts
 environments:
   localnet:
       network_id: localnet

@@ -8,26 +8,29 @@ import {
   generateSigner,
   signerIdentity,
   percentAmount,
+  createSignerFromKeypair,
 } from "@metaplex-foundation/umi";
+import dummyKeypair from "../runbooks/dummy-keypair.json";
+import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 
 const connection = new anchor.web3.Connection("http://localhost:8899");
 
 async function main() {
   const umi = createUmi(connection).use(mplTokenMetadata());
-  const auctioneer = generateSigner({ eddsa: umi.eddsa });
-  umi.use(signerIdentity(auctioneer));
+  // create signer from dummy keypair for testing purposes
+  const dummyKeypairUint8Array = new Uint8Array(dummyKeypair);
+  const dummySigner = anchor.web3.Keypair.fromSecretKey(dummyKeypairUint8Array);
 
-  const secretKey = Array.from(auctioneer.secretKey);
-  const keypair = anchor.web3.Keypair.fromSecretKey(new Uint8Array(secretKey));
+  const umiKeypair = fromWeb3JsKeypair(dummySigner);
+  const signer = createSignerFromKeypair(umi, umiKeypair);
+  umi.use(signerIdentity(signer));
 
-  console.log("Funding wallet:", keypair.publicKey.toString());
   const airdropSig = await connection.requestAirdrop(
-    keypair.publicKey,
+    dummySigner.publicKey,
     10 * anchor.web3.LAMPORTS_PER_SOL
   );
   await connection.confirmTransaction(airdropSig);
 
-  console.log("Wallet:", auctioneer.publicKey.toString());
   console.log("Creating NFTs...\n");
 
   for (let i = 1; i <= 2; i++) {
