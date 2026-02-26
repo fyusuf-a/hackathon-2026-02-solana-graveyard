@@ -3,7 +3,7 @@ use anchor_spl::{
     associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface, transfer_checked, TransferChecked}
 };
 
-use crate::{state::Auction, utils::{FundAccountArgs, NoData, fund_account}};
+use crate::{errors::AuctionError, state::{Auction, ReferralStructure}, utils::{FundAccountArgs, NoData, fund_account}};
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -50,7 +50,15 @@ pub struct CreateAuction<'info> {
 }
 
 impl<'info> CreateAuction<'info> {
-    pub fn create(&mut self, start_time: i64, deadline: i64, min_price: u64, min_increment: u64, bumps: &CreateAuctionBumps) -> Result<()> {
+    pub fn create(&mut self, start_time: i64, deadline: i64, min_price: u64, min_increment: u64, referral_structure: Option<ReferralStructure>, bumps: &CreateAuctionBumps) -> Result<()> {
+        match referral_structure {
+            Some(ref structure) => {
+                require!(structure.buyer_discount_bps < structure.base_fee_bps, AuctionError::IncorrectFeeStructure);
+            }
+            _ => ()
+        }
+
+
         self.auction.set_inner(Auction {
             start_time,
             deadline,
@@ -60,6 +68,7 @@ impl<'info> CreateAuction<'info> {
             min_increment,
             mint: self.mint.key(),
             maker: self.user.key(),
+            referral_structure,
             bump: bumps.auction,
             vault_bump: bumps.vault,
         });

@@ -14,4 +14,10 @@ pub enum AuctionError {
     BadPrecedingBidder,
     #[msg("Bad account")]
     BadAccount,
+    #[msg("Referrers list full")]
+    ReferrersListFull,
+    #[msg("Referrer already exists")]
+    ExistingReferrer,
+    #[msg("Incorrect fee structure")]
+    IncorrectFeeStructure,
 }
