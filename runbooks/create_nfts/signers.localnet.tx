@@ -1,0 +1,10 @@
+
+signer "payer" "svm::keypair" {
+    description = "Pays fees for NFT creation"
+    path = "./runbooks/dummy-keypair.json"
+}
+
+signer "authority" "svm::keypair" {
+    description = "Authority for NFT creation"
+    path = "./runbooks/dummy-keypair.json"
+}

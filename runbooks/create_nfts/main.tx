@@ -1,0 +1,16 @@
+################################################################
+# Create 2 NFTs for testing the auction contract
+################################################################
+
+addon "svm" {
+    rpc_api_url = "http://localhost:8999"
+    network_id = "localnet"
+}
+
+action "create_nfts" "ts::exec" {
+    description = "Create 2 NFTs on localnet"
+    cwd = "./"
+    script = <<-EOF
+        yarn ts-node --project scripts/tsconfig.json scripts/create-nfts.ts
+    EOF
+}
