@@ -1,6 +1,5 @@
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 
 const LOCALNET_ENDPOINT = "http://localhost:8899";
 const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjbCtYieDbvfPXA";
@@ -22,7 +21,7 @@ export async function fetchUserNFTs(ownerAddress: string): Promise<NFTInfo[]> {
     const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
       owner,
       {
-        programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9We613PSg"),
+        programId: TOKEN_PROGRAM_ID,
       }
     );
 
