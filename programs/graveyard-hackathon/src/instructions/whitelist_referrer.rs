@@ -1,7 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken, token_interface::TokenInterface
-};
 
 use crate::{state::{Auction, Referrers}};
 
@@ -29,9 +26,7 @@ pub struct WhitelistReferrer<'info> {
 
     pub referrer: SystemAccount<'info>,
 
-    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub token_program: Interface<'info, TokenInterface>,
 }
 
 impl<'info> WhitelistReferrer<'info> {

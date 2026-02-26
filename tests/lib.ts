@@ -77,6 +77,11 @@ export async function setupAuction(provider: anchor.AnchorProvider, umi: Umi, pr
   }
 }
 
+type FeeStructure = {
+  baseFeeBps: number;
+  buyerDiscountBps: number;
+}
+
 export async function createAuction(
   auctioneer: KeypairSigner,
   startTime: number,
@@ -84,6 +89,7 @@ export async function createAuction(
   program: anchor.Program<GraveyardHackathon>,
   provider: anchor.AnchorProvider,
   umi: Umi,
+  feeStructure: FeeStructure | null = null
 ) {
   const { seed, nftMint, auctioneerAta, vaultAta, auction, vault} = await setupAuction(provider, umi, program, auctioneer);
 
@@ -93,7 +99,7 @@ export async function createAuction(
     new anchor.BN(endTime),
     new anchor.BN(0),
     new anchor.BN(0),
-    null,
+    feeStructure
   )
     .accountsStrict({
       user: auctioneer.publicKey,

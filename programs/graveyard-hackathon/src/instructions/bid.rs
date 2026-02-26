@@ -51,6 +51,19 @@ impl<'info> Bid<'info> {
         require!(time_elapsed >= 0, AuctionError::AuctionNotStarted);
         require!(current_time < self.auction.deadline, AuctionError::AuctionEnded);
 
+        // check auction amount
+        let minimum = match self.auction.current_bid {
+            Some(current_bid) => current_bid + self.auction.min_increment,
+            None => self.auction.min_price,
+        };
+        require!(lamports >= minimum, AuctionError::BidTooLow);
+
+        // refund preceding bidder
+        require!(self.auction.current_bidder == self.preceding_bidder.clone().map(|x| x.key()), AuctionError::BadPrecedingBidder); 
+        if self.preceding_bidder.is_some() {
+            self.refund(seed)?;
+        }
+
         let is_referred = if self.referrer.is_some() && self.referrer_whitelist.is_some() {
             let referrer = self.referrer.as_ref().unwrap();
             let list = self.referrer_whitelist.as_ref().unwrap();
@@ -59,26 +72,13 @@ impl<'info> Bid<'info> {
 
         let DistributionScheme { to_vault, to_referrer } = self.compute_distribution(lamports, is_referred);
 
-        // check auction amount
-        let minimum = match self.auction.current_bid {
-            Some(current_bid) => current_bid + self.auction.min_increment,
-            None => self.auction.min_price,
-        };
-        require!(to_vault > minimum, AuctionError::BidTooLow);
-
-        // if there is a preceding bidder, refund them
-        require!(self.auction.current_bidder == self.preceding_bidder.clone().map(|x| x.key()), AuctionError::BadPrecedingBidder);
-        if self.auction.current_bidder.is_some() {
-            self.refund(seed)?;
-        }
-
         // transfer payment to the required parties
         self.fund(to_vault, self.vault.to_account_info())?;
         if is_referred {
             self.fund(to_referrer, self.referrer.clone().unwrap())?;
         }
 
-        self.auction.current_bid = Some(to_vault);
+        self.auction.current_bid = Some(lamports);
         self.auction.current_bidder = Some(*self.bidder.key);
         Ok(())
     }
@@ -129,7 +129,8 @@ impl<'info> Bid<'info> {
             },
             signer_seeds,
         );
-        let current_bid = self.auction.current_bid.unwrap();
-        transfer(cpi_ctx, current_bid)
+        let rent = Rent::get().unwrap().minimum_balance(0);
+        let balance = self.vault.lamports();
+        transfer(cpi_ctx, (balance - rent).max(0))
     }
 }
