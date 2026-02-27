@@ -7,6 +7,22 @@ To dynamize the sale events, we implemented an optional referral system.
 
 KOLs and community members can be whitelisted for a particular auction: they are thus more aligned with the project. They can share their public key with their audience, and receive a commission for each bid made using this key.
 
+## Getting started
+
+```bash
+yarn
+anchor build
+```
+
+```bash
+surfpool start
+```
+
+```bash
+npx ts-node scripts/create-nfts.ts
+npx ts-node scripts/create-auction.ts
+```
+
 ## Mechanism
 
 Referrers are whitelisted by the maker.
