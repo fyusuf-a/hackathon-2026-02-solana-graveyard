@@ -3,5 +3,5 @@
 import AuctionsList from "@/components/AuctionsList";
 
 export default function AuctionsPage() {
-  return <AuctionsList onlyMine={false} />;
+  return <AuctionsList onlyMine={true} />;
 }

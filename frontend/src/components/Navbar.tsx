@@ -25,6 +25,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/create-auction", label: "Create Auction" },
     { href: "/auctions", label: "Auction List" },
+    { href: "/my-auctions", label: "My Auctions" },
   ];
 
   return (
