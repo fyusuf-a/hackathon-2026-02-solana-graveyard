@@ -21,7 +21,9 @@ interface AuctionData {
 function decodeAuction(data: Buffer): any {
   const decoder = new BorshAccountsCoder(idl as any);
   try {
-    return decoder.decode("Auction", data);
+    const auction = decoder.decode("Auction", data);
+    console.log("Decoded auction:", auction);
+    return auction;
   } catch (e) {
     console.error("Decode error:", e);
     return {};
@@ -63,14 +65,14 @@ export default function AuctionsPage() {
                 address,
                 mint: decoded.mint.toString(),
                 maker: decoded.maker?.toString() || "",
-                currentBidder: decoded.currentBidder
-                  ? decoded.currentBidder.toString()
+                currentBidder: decoded.current_bidder
+                  ? decoded.current_bidder.toString()
                   : null,
                 currentBid: decoded.currentBid
                   ? Number(decoded.currentBid)
                   : null,
-                minPrice: Number(decoded.minPrice) || 0,
-                startTime: Number(decoded.startTime) || 0,
+                minPrice: Number(decoded.min_price) || 0,
+                startTime: Number(decoded.start_time) || 0,
                 deadline: Number(decoded.deadline) || 0,
               });
             }
@@ -137,9 +139,6 @@ export default function AuctionsPage() {
                     <p className="text-gray-500">No bids yet</p>
                   )}
                 </div>
-              </div>
-              <div className="mt-2 pt-2 border-t border-gray-800 text-xs text-gray-500">
-                Address: {auction.address.toString()}
               </div>
             </div>
           ))}
