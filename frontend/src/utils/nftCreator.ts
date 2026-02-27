@@ -1,8 +1,10 @@
+"use client";
 import * as anchor from "@coral-xyz/anchor";
 import {
   Connection,
   PublicKey,
   Transaction,
+  TransactionInstruction,
   SystemProgram,
 } from "@solana/web3.js";
 import {
@@ -11,18 +13,78 @@ import {
   createAssociatedTokenAccountInstruction,
   createMintToInstruction,
   TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
 const LOCALNET_ENDPOINT = "http://localhost:8899";
 
+function utf8StringToBytes(str: string): number[] {
+  const encoder = new TextEncoder();
+  return Array.from(encoder.encode(str));
+}
+
+function createMetadataInstruction(
+  metadataProgramId: PublicKey,
+  metadata: PublicKey,
+  mint: PublicKey,
+  mintAuthority: PublicKey,
+  payer: PublicKey,
+  updateAuthority: PublicKey,
+  name: string,
+  symbol: string,
+  uri: string
+): TransactionInstruction {
+  const keys = [
+    { pubkey: metadata, isSigner: false, isWritable: true },
+    { pubkey: mint, isSigner: false, isWritable: false },
+    { pubkey: mintAuthority, isSigner: true, isWritable: false },
+    { pubkey: payer, isSigner: true, isWritable: false },
+    { pubkey: updateAuthority, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ];
+
+  const data = Buffer.alloc(1000);
+  let offset = 0;
+
+  data.writeUInt8(0, offset);
+  offset += 1;
+
+  const nameBytes = utf8StringToBytes(name);
+  data.writeUInt32LE(nameBytes.length, offset);
+  offset += 4;
+  data.set(nameBytes, offset);
+  offset += nameBytes.length;
+
+  const symbolBytes = utf8StringToBytes(symbol);
+  data.writeUInt32LE(symbolBytes.length, offset);
+  offset += 4;
+  data.set(symbolBytes, offset);
+  offset += symbolBytes.length;
+
+  const uriBytes = utf8StringToBytes(uri);
+  data.writeUInt32LE(uriBytes.length, offset);
+  offset += 4;
+  data.set(uriBytes, offset);
+  offset += uriBytes.length;
+
+  data.writeUInt8(0, offset);
+  offset += 1;
+
+  data.writeUInt16LE(0, offset);
+
+  return new TransactionInstruction({
+    keys,
+    programId: metadataProgramId,
+    data: data.slice(0, offset + 2),
+  });
+}
+
 export async function createTestNft(
+  metadataProgramId: PublicKey,
   walletPublicKey: PublicKey,
   signTransaction: (transaction: Transaction) => Promise<Transaction>
 ): Promise<string> {
   const connection = new Connection(LOCALNET_ENDPOINT);
 
-  // Airdrop SOL if needed
   const balance = await connection.getBalance(walletPublicKey);
   if (balance < 1 * anchor.web3.LAMPORTS_PER_SOL) {
     const airdropSig = await connection.requestAirdrop(
@@ -32,24 +94,30 @@ export async function createTestNft(
     await connection.confirmTransaction(airdropSig, "confirmed");
   }
 
-  // Generate a new mint keypair
   const mint = anchor.web3.Keypair.generate();
   const mintPubkey = mint.publicKey;
 
-  // Get minimum balance for minting
   const mintRent = await connection.getMinimumBalanceForRentExemption(82);
 
-  // Get associated token account
   const userAta = getAssociatedTokenAddressSync(
     mintPubkey,
     walletPublicKey,
     true
   );
 
-  // Build the transaction
+  const [metadataAddress] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("metadata"),
+      metadataProgramId.toBuffer(),
+      mintPubkey.toBuffer(),
+    ],
+    metadataProgramId
+  );
+
+  const metadataRent = await connection.getMinimumBalanceForRentExemption(0);
+
   const transaction = new Transaction();
 
-  // Create mint account (need to add +82 bytes for mint data)
   transaction.add(
     SystemProgram.createAccount({
       fromPubkey: walletPublicKey,
@@ -67,7 +135,35 @@ export async function createTestNft(
     )
   );
 
-  // Create associated token account
+  transaction.add(
+    SystemProgram.createAccount({
+      fromPubkey: walletPublicKey,
+      newAccountPubkey: metadataAddress,
+      space: 1000,
+      lamports: metadataRent,
+      programId: metadataProgramId,
+    })
+  );
+
+  const randomSeed = Math.floor(Math.random() * 1000000);
+  const nftName = `Test NFT ${randomSeed}`;
+  const nftSymbol = "TNFT";
+  const nftUri = `https://picsum.photos/seed/${randomSeed}/200/300`;
+
+  transaction.add(
+    createMetadataInstruction(
+      metadataProgramId,
+      metadataAddress,
+      mintPubkey,
+      walletPublicKey,
+      walletPublicKey,
+      walletPublicKey,
+      nftName,
+      nftSymbol,
+      nftUri
+    )
+  );
+
   transaction.add(
     createAssociatedTokenAccountInstruction(
       walletPublicKey,
@@ -77,23 +173,18 @@ export async function createTestNft(
     )
   );
 
-  // Mint 2 tokens to the user (so they have > 1)
   transaction.add(
     createMintToInstruction(mintPubkey, userAta, walletPublicKey, 2)
   );
 
-  // Get recent blockhash
   const { blockhash } = await connection.getLatestBlockhash();
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = walletPublicKey;
 
-  // Sign with both the wallet and the mint keypair
   transaction.partialSign(mint);
 
-  // Sign with wallet
   const signedTx = await signTransaction(transaction);
 
-  // Send transaction
   const signature = await connection.sendRawTransaction(signedTx.serialize());
   await connection.confirmTransaction(signature, "confirmed");
 

@@ -93,3 +93,51 @@ export async function fetchUserNFTs(ownerAddress: string): Promise<NFTInfo[]> {
     return [];
   }
 }
+
+export async function fetchNFTByMint(
+  mintAddress: string
+): Promise<NFTInfo | null> {
+  const connection = new Connection(LOCALNET_ENDPOINT);
+
+  try {
+    const [metadataAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("metadata"),
+        new PublicKey(METADATA_PROGRAM_ID).toBuffer(),
+        new PublicKey(mintAddress).toBuffer(),
+      ],
+      new PublicKey(METADATA_PROGRAM_ID)
+    );
+
+    const accountInfo = await connection.getAccountInfo(metadataAddress);
+    if (accountInfo && accountInfo.data) {
+      const data = accountInfo.data;
+
+      let offset = 1 + 1 + 32 + 4;
+      const nameLen = data.readUInt32BE(offset);
+      offset += 4;
+      const name = data.slice(offset, offset + nameLen).toString("utf-8");
+      offset += nameLen;
+
+      const symbolLen = data.readUInt32BE(offset);
+      offset += 4;
+      const symbol = data.slice(offset, offset + symbolLen).toString("utf-8");
+      offset += symbolLen;
+
+      const uriLen = data.readUInt32BE(offset);
+      offset += 4;
+      const uri = data.slice(offset, offset + uriLen).toString("utf-8");
+
+      return {
+        mint: mintAddress,
+        name: name || "Unnamed NFT",
+        symbol: symbol || "",
+        uri,
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error("Failed to fetch NFT by mint:", e);
+    return null;
+  }
+}

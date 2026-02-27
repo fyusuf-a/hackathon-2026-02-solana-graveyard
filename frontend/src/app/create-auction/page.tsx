@@ -226,6 +226,9 @@ export default function CreateAuctionPage() {
   const [loading, setLoading] = useState(false);
   const [selectedNft, setSelectedNft] = useState<NFTInfo | null>(null);
   const [creatingNft, setCreatingNft] = useState(false);
+  const metadataProgramId = new PublicKey(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  );
 
   useEffect(() => {
     if (connected && publicKey) {
@@ -241,7 +244,7 @@ export default function CreateAuctionPage() {
 
     setCreatingNft(true);
     try {
-      await createTestNft(publicKey, signTransaction);
+      await createTestNft(metadataProgramId, publicKey, signTransaction);
       // Refresh NFTs
       if (publicKey) {
         fetchUserNFTs(publicKey.toBase58()).then(setNfts);

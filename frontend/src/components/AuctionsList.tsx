@@ -7,20 +7,8 @@ import { getAllAuctions, getProgram, getVaultPda } from "@/utils/program";
 import { BorshAccountsCoder, BN, web3 } from "@coral-xyz/anchor";
 import idl from "../../../target/idl/graveyard_hackathon.json";
 import AuctionCard from "@/components/AuctionCard";
-import { computeBid } from "@/utils/bidComputer";
-
-interface AuctionData {
-  address: PublicKey;
-  seed: number;
-  mint: string;
-  maker: string;
-  currentBidder: string | null;
-  currentBid: number | null;
-  minPrice: number;
-  minIncrement: number;
-  startTime: number;
-  deadline: number;
-}
+import { Auction, NFTInfo } from "@/utils/bidComputer";
+import { fetchNFTByMint } from "@/utils/nftFetcher";
 
 function decodeAuction(data: Buffer): any {
   const decoder = new BorshAccountsCoder(idl as any);
@@ -36,7 +24,7 @@ function decodeAuction(data: Buffer): any {
 export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
   const { connection } = useConnection();
   const wallet = useWallet();
-  const [auctions, setAuctions] = useState<AuctionData[]>([]);
+  const [auctions, setAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLive, setShowLive] = useState(true);
   const [, setTick] = useState(0);
@@ -63,7 +51,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
           auctionAddresses
         );
 
-        const auctionData: AuctionData[] = [];
+        const auctionData: Auction[] = [];
 
         for (let i = 0; i < auctionAddresses.length; i++) {
           const address = auctionAddresses[i];
@@ -80,6 +68,9 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
               ) {
                 continue;
               }
+
+              const nft = await fetchNFTByMint(decoded.mint.toString());
+
               auctionData.push({
                 address,
                 seed: Number(decoded.seed) || 0,
@@ -95,6 +86,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
                 minIncrement: Number(decoded.min_increment) || 0,
                 startTime: Number(decoded.start_time) || 0,
                 deadline: Number(decoded.deadline) || 0,
+                nft,
               });
             }
           } catch (e) {
@@ -113,11 +105,15 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
     fetchAuctions();
   }, [connection, wallet.publicKey, onlyMine]);
 
-  const handleBid = async (auction: AuctionData, bidAmount: number) => {
+  const handleBid = async (auction: Auction) => {
     if (!wallet.publicKey || !wallet.signTransaction) {
       alert("Please connect your wallet");
       return;
     }
+
+    const minBid = auction.currentBid
+      ? Math.max(auction.currentBid + auction.minIncrement, auction.minPrice)
+      : auction.minPrice;
 
     try {
       const program = getProgram(connection, wallet as any);
@@ -145,7 +141,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
         auctionAddresses
       );
 
-      const auctionData: AuctionData[] = [];
+      const auctionData: Auction[] = [];
       for (let i = 0; i < auctionAddresses.length; i++) {
         const address = auctionAddresses[i];
         const accountInfo = accountInfos[i];
@@ -153,6 +149,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
         try {
           const decoded = decodeAuction(Buffer.from(accountInfo.data));
           if (decoded.mint) {
+            const nft = await fetchNFTByMint(decoded.mint.toString());
             auctionData.push({
               address,
               seed: Number(decoded.seed) || 0,
@@ -168,6 +165,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
               minIncrement: Number(decoded.min_increment) || 0,
               startTime: Number(decoded.start_time) || 0,
               deadline: Number(decoded.deadline) || 0,
+              nft,
             });
           }
         } catch (e) {

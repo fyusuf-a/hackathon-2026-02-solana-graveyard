@@ -6,7 +6,7 @@ import { formatDistanceToNow, formatDistance } from "date-fns";
 import { useMemo } from "react";
 
 interface AuctionCardProps {
-  auction: Auction,
+  auction: Auction;
   currentWallet: PublicKey | null;
   onBid: (auction: Auction) => void;
 }
@@ -45,15 +45,33 @@ export default function AuctionCard({
 
   return (
     <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
-      <div className="flex justify-between items-start">
-        <div>
+      <div className="flex gap-4">
+        <div className="w-24 h-24 bg-gray-800 rounded-lg flex-shrink-0 flex items-center justify-center">
+          {auction.nft?.uri ? (
+            <img
+              src={auction.nft.uri}
+              alt={auction.nft.name}
+              className="w-full h-full object-cover rounded-lg"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <span className="text-3xl">🖼️</span>
+          )}
+        </div>
+        <div className="flex-1">
           <p className="text-white font-semibold">
-            Mint: {auction.mint.slice(0, 8)}...{auction.mint.slice(-4)}
+            {auction.nft?.name ||
+              `Mint: ${auction.mint.slice(0, 8)}...${auction.mint.slice(-4)}`}
           </p>
+          {auction.nft?.symbol && (
+            <p className="text-purple-400 text-sm">{auction.nft.symbol}</p>
+          )}
           <p className="text-gray-400 text-sm">
             Maker:{" "}
             {isMaker
-              ? "you"
+              ? "You"
               : `${auction.maker.slice(0, 8)}...${auction.maker.slice(-4)}`}
           </p>
           <p className="text-gray-400 text-sm">
@@ -63,17 +81,12 @@ export default function AuctionCard({
             Min Increment: {formatLamports(auction.minIncrement)}
           </p>
           {isLive && (
-            <>
-              <p className="text-gray-400 text-sm">
-                {formatTimeStatus(auction.startTime)}
-              </p>
-              <p className="text-gray-400 text-sm">
-                Ends{" "}
-                {formatDistanceToNow(new Date(auction.deadline * 1000), {
-                  addSuffix: true,
-                })}
-              </p>
-            </>
+            <p className="text-gray-400 text-sm">
+              Ends{" "}
+              {formatDistanceToNow(new Date(auction.deadline * 1000), {
+                addSuffix: true,
+              })}
+            </p>
           )}
           {!isLive && (
             <p className="text-gray-400 text-sm">
