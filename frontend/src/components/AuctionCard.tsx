@@ -80,7 +80,7 @@ export default function AuctionCard({ auction, onBid }: AuctionCardProps) {
           {auction.currentBid ? (
             <>
               <p className="text-purple-400 font-semibold">
-                {formatLamports(auction.currentBid)}
+                Current bid: {formatLamports(auction.currentBid)}
               </p>
               <p className="text-gray-400 text-sm">
                 by {auction.currentBidder?.slice(0, 4)}...

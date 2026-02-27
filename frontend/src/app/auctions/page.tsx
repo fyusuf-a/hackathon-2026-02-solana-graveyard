@@ -84,7 +84,7 @@ export default function AuctionsPage() {
                 currentBidder: decoded.current_bidder
                   ? decoded.current_bidder.toString()
                   : null,
-                currentBid: decoded.currentBid
+                currentBid: decoded.current_bid
                   ? Number(decoded.current_bid)
                   : null,
                 minPrice: Number(decoded.min_price) || 0,
@@ -93,6 +93,7 @@ export default function AuctionsPage() {
                 deadline: Number(decoded.deadline) || 0,
               });
             }
+            console.log("Processed auction:", auctionData);
           } catch (e) {
             console.error("Error decoding auction:", address.toString(), e);
           }
