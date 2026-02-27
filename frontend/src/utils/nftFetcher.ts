@@ -32,8 +32,9 @@ export async function fetchUserNFTs(ownerAddress: string): Promise<NFTInfo[]> {
       const mintAddress = parsed.info.mint;
       const amount = parsed.info.amount;
 
-      // Only include tokens with amount > 0 (NFTs)
-      if (amount === "0" || amount === 0) continue;
+      // Only include tokens with amount > 1
+      const amountNum = parseInt(amount);
+      if (isNaN(amountNum) || amountNum <= 1) continue;
 
       try {
         // Fetch metadata account
