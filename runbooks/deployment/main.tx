@@ -17,11 +17,3 @@ action "deploy_graveyard_hackathon" "svm::deploy_program" {
     // This will make deployments instantaneous, but is deviating from how the deployments will take place on devnet/mainnet.
     instant_surfnet_deployment = true
 }
-
-action "create_nfts" "ts::exec" {
-    description = "Create 2 NFTs on localnet"
-    cwd = "./"
-    script = <<-EOF
-        yarn ts-node scripts/create-nfts.ts
-    EOF
-}
