@@ -50,20 +50,6 @@ export default function Home() {
           localnet:
         </p>
 
-        <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
-          <p className="text-sm text-gray-400 mb-2">Private Key</p>
-          <div className="flex items-center gap-2">
-            <code className="text-purple-400 font-mono text-sm break-all flex-1 text-left">
-              {DUMMY_PRIVATE_KEY}
-            </code>
-            <button
-              onClick={copyToClipboard}
-              className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors whitespace-nowrap"
-            >
-              {copied ? "Copied!" : "Copy"}
-            </button>
-          </div>
-        </div>
 
         <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
           <p className="text-sm text-gray-400 mb-2">Public Key</p>
