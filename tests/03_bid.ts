@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { setupAuction } from "./lib";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { expect } from "chai";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
@@ -38,6 +39,24 @@ let auction: anchor.web3.PublicKey;
 let vault: anchor.web3.PublicKey;
 let auctionStart: number;
 let auctionEnd: number;
+
+const checkBid = async (amount: anchor.BN, bidder: anchor.web3.PublicKey) => {
+    const auctionData = await program.account.auction.fetch(auction);
+    
+    try {
+      expect(auctionData.currentBid.eq(amount));
+    } catch (error) {
+      console.error(`Expected current bid to be ${amount.toString()}, but got ${auctionData.currentBid.toString()}`);
+      throw error;
+    }
+    try {
+      expect(auctionData.currentBidder.equals(bidder));
+    } catch (error) {
+      console.error(`Expected current bidder to be ${bidder.toString()}, but got ${auctionData.currentBidder.toString()}`);
+      throw error;
+    }
+}
+
 
 describe("Bids", () => {
   before(async () => {
@@ -114,6 +133,7 @@ describe("Bids", () => {
         })
         .signers([web3JsBidder1Signer])
         .rpc();
+      await checkBid(new anchor.BN(1), web3JsBidder1Signer.publicKey);
     });
 
     it("The vault balance should increase", async () => {
@@ -153,6 +173,7 @@ describe("Bids", () => {
           })
           .signers([web3JsBidder2Signer])
           .rpc();
+        await checkBid(new anchor.BN(2), web3JsBidder2Signer.publicKey);
     });
   });
 
