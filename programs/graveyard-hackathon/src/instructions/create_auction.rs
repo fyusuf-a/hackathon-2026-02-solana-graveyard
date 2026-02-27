@@ -50,7 +50,16 @@ pub struct CreateAuction<'info> {
 }
 
 impl<'info> CreateAuction<'info> {
-    pub fn create(&mut self, start_time: i64, deadline: i64, min_price: u64, min_increment: u64, referral_structure: Option<ReferralStructure>, bumps: &CreateAuctionBumps) -> Result<()> {
+    pub fn create(
+        &mut self,
+        seed: u64,
+        start_time: i64,
+        deadline: i64,
+        min_price: u64,
+        min_increment: u64,
+        referral_structure: Option<ReferralStructure>,
+        bumps: &CreateAuctionBumps,
+    ) -> Result<()> {
         match referral_structure {
             Some(ref structure) => {
                 require!(structure.buyer_discount_bps < structure.base_fee_bps, AuctionError::IncorrectFeeStructure);
@@ -60,6 +69,7 @@ impl<'info> CreateAuction<'info> {
 
 
         self.auction.set_inner(Auction {
+            seed,
             start_time,
             deadline,
             min_price,

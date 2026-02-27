@@ -9,6 +9,7 @@ pub struct ReferralStructure {
 #[account]
 #[derive(InitSpace)]
 pub struct Auction {
+    pub seed: u64,
     pub start_time: i64,
     pub deadline: i64,
     pub min_price: u64,
