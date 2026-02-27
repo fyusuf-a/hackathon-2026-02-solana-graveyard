@@ -1,23 +1,13 @@
 "use client";
 
-import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Auction, computeBid } from "@/utils/bidComputer";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { useMemo } from "react";
 
 interface AuctionCardProps {
-  auction: {
-    address: PublicKey;
-    seed: number;
-    mint: string;
-    maker: string;
-    currentBidder: string | null;
-    currentBid: number | null;
-    minPrice: number;
-    minIncrement: number;
-    startTime: number;
-    deadline: number;
-  };
-  onBid: (auction: AuctionCardProps["auction"]) => void;
+  auction: Auction;
+  onBid: (auction: AuctionCardProps["auction"], amount: number) => void;
 }
 
 function formatLamports(lamports: number): string {
@@ -44,11 +34,8 @@ export default function AuctionCard({ auction, onBid }: AuctionCardProps) {
   const isLive = auction.deadline > now;
 
   const minBid = useMemo(() => {
-      const basePrice = auction.currentBid ? auction.currentBid : auction.minPrice;
-      const increment = auction.minIncrement > 0 ? auction.minIncrement : 1;
-    console.log("Calculating minBid:", basePrice + increment);
-      return basePrice + increment;
-  }, [auction.currentBid, auction.minIncrement, auction.minPrice]);
+    return computeBid(auction);
+  }, [auction]);
 
   return (
     <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
@@ -105,7 +92,9 @@ export default function AuctionCard({ auction, onBid }: AuctionCardProps) {
           )}
           {isLive && (
             <button
-              onClick={() => onBid(auction)}
+              onClick={() => {
+                onBid(auction, minBid);
+              }}
               className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm"
             >
               Bid {formatLamports(minBid)}

@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import * as anchor from "@coral-xyz/anchor";
 import { getAllAuctions, getProgram, getVaultPda } from "@/utils/program";
-import { BorshAccountsCoder } from "@coral-xyz/anchor";
+import { BorshAccountsCoder, BN, web3 } from "@coral-xyz/anchor";
 import idl from "../../../../target/idl/graveyard_hackathon.json";
 import AuctionCard from "@/components/AuctionCard";
+import { computeBid } from "@/utils/bidComputer";
 
 interface AuctionData {
   address: PublicKey;
@@ -109,7 +109,7 @@ export default function AuctionsPage() {
     fetchAuctions();
   }, [connection]);
 
-  const handleBid = async (auction: AuctionData) => {
+  const handleBid = async (auction: AuctionData, bidAmount: number) => {
     if (!wallet.publicKey || !wallet.signTransaction) {
       alert("Please connect your wallet");
       return;
@@ -117,15 +117,14 @@ export default function AuctionsPage() {
 
     try {
       const program = getProgram(connection, wallet as any);
-      const seed = new anchor.BN(auction.seed);
-      const minBid = auction.currentBid
-        ? Math.max(auction.currentBid + auction.minIncrement, auction.minPrice)
-        : auction.minPrice;
+      const seed = new BN(auction.seed.toString());
 
       const vault = await getVaultPda(seed);
 
+      console.log(seed, vault.toString(), bidAmount);
+
       await program.methods
-        .bid(seed, new anchor.BN(minBid))
+        .bid(seed, new BN(bidAmount))
         .accountsStrict({
           bidder: wallet.publicKey,
           auction: auction.address,
@@ -135,7 +134,7 @@ export default function AuctionsPage() {
             : null,
           referrerWhitelist: null,
           referrer: null,
-          systemProgram: anchor.web3.SystemProgram.programId,
+          systemProgram: web3.SystemProgram.programId,
         })
         .rpc();
 
@@ -175,7 +174,7 @@ export default function AuctionsPage() {
       }
       setAuctions(auctionData);
     } catch (e) {
-      console.error("Error placing bid:", e);
+      console.log("Error placing bid:", e);
       alert("Failed to place bid");
     }
   };
