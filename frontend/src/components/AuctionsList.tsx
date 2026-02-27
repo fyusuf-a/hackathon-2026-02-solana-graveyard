@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { getAllAuctions, getProgram, getVaultPda } from "@/utils/program";
+import {
+  getAllAuctions,
+  getProgram,
+  getVaultPda,
+  getReferrerWhitelistAccount,
+  getReferrerWhitelistPda,
+  getAuctionPda,
+} from "@/utils/program";
 import { BorshAccountsCoder, BN, web3 } from "@coral-xyz/anchor";
 import idl from "../../../target/idl/graveyard_hackathon.json";
 import AuctionCard from "@/components/AuctionCard";
@@ -71,6 +78,17 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
 
               const nft = await fetchNFTByMint(decoded.mint.toString());
 
+              const seedNum = Number(decoded.seed) || 0;
+              let referrersCount = 0;
+              try {
+                const seedBN = new BN(seedNum.toString());
+                const result = await getReferrerWhitelistAccount(
+                  connection,
+                  seedBN
+                );
+                referrersCount = result?.referrers.length || 0;
+              } catch {}
+
               let referralStructure = null;
               if (decoded.referral_structure) {
                 referralStructure = {
@@ -83,7 +101,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
 
               auctionData.push({
                 address,
-                seed: Number(decoded.seed) || 0,
+                seed: seedNum,
                 mint: decoded.mint.toString(),
                 maker: decoded.maker?.toString() || "",
                 currentBidder: decoded.current_bidder
@@ -98,6 +116,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
                 deadline: Number(decoded.deadline) || 0,
                 nft,
                 referralStructure,
+                referrersCount,
               });
             }
           } catch (e) {
@@ -183,6 +202,17 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
           if (decoded.mint) {
             const nft = await fetchNFTByMint(decoded.mint.toString());
 
+            const seedNum = Number(decoded.seed) || 0;
+            let referrersCount = 0;
+            try {
+              const seedBN = new BN(seedNum.toString());
+              const result = await getReferrerWhitelistAccount(
+                connection,
+                seedBN
+              );
+              referrersCount = result?.referrers.length || 0;
+            } catch {}
+
             let referralStructure = null;
             if (decoded.referral_structure) {
               referralStructure = {
@@ -195,7 +225,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
 
             auctionData.push({
               address,
-              seed: Number(decoded.seed) || 0,
+              seed: seedNum,
               mint: decoded.mint.toString(),
               maker: decoded.maker?.toString() || "",
               currentBidder: decoded.current_bidder
@@ -210,6 +240,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
               deadline: Number(decoded.deadline) || 0,
               nft,
               referralStructure,
+              referrersCount,
             });
           }
         } catch (e) {
@@ -220,6 +251,48 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
     } catch (e) {
       console.log("Error placing bid:", e);
       alert("Failed to place bid");
+    }
+  };
+
+  const handleWhitelistReferrer = async (
+    auction: Auction,
+    referrer: string
+  ) => {
+    if (!wallet.publicKey || !wallet.signTransaction) {
+      alert("Please connect your wallet");
+      return;
+    }
+
+    let referrerKey: PublicKey;
+    try {
+      referrerKey = new PublicKey(referrer);
+    } catch {
+      alert("Invalid referrer public key");
+      return;
+    }
+
+    try {
+      const program = getProgram(connection, wallet as any);
+      const seed = new BN(auction.seed.toString());
+
+      const auctionAddress = await getAuctionPda(seed);
+      const referrerWhitelist = await getReferrerWhitelistPda(seed);
+
+      await program.methods
+        .whitelistReferrer(seed)
+        .accountsStrict({
+          maker: wallet.publicKey,
+          auction: auctionAddress,
+          referrerWhitelist: referrerWhitelist,
+          referrer: referrerKey,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .rpc();
+
+      alert("Referrer whitelisted successfully!");
+    } catch (e) {
+      console.log("Error whitelisting referrer:", e);
+      alert("Failed to whitelist referrer");
     }
   };
 
@@ -274,6 +347,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
               auction={auction}
               currentWallet={wallet.publicKey}
               onBid={handleBid}
+              onWhitelistReferrer={handleWhitelistReferrer}
             />
           ))}
         </div>

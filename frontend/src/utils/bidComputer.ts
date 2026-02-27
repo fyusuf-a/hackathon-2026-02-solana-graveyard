@@ -25,6 +25,7 @@ export type Auction = {
   deadline: number;
   nft: NFTInfo | null;
   referralStructure: ReferralStructure | null;
+  referrersCount: number;
 };
 
 export function computeBid(auction: Auction): number {

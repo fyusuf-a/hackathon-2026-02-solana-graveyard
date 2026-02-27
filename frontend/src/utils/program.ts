@@ -1,4 +1,4 @@
-import { BN, AnchorProvider, Idl } from "@coral-xyz/anchor";
+import { BN, AnchorProvider, Idl, BorshAccountsCoder } from "@coral-xyz/anchor";
 import { Program, Wallet } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
@@ -39,6 +39,40 @@ export async function getVaultPda(seed: BN): Promise<PublicKey> {
   )[0];
 }
 
+export async function getReferrerWhitelistPda(seed: BN): Promise<PublicKey> {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("whitelist"), seed.toArrayLike(Buffer, "le", 8)],
+    PROGRAM_ID
+  )[0];
+}
+
+export async function getReferrerWhitelistAccount(
+  connection: Connection,
+  seed: BN
+): Promise<{ referrers: string[] } | null> {
+  try {
+    const whitelistAddr = await getReferrerWhitelistPda(seed);
+    const accountInfo = await connection.getAccountInfo(whitelistAddr);
+    if (!accountInfo || !accountInfo.data) {
+      return null;
+    }
+    const decoder = new BorshAccountsCoder(idl as Idl);
+    const decoded = decoder.decode("Referrers", Buffer.from(accountInfo.data));
+    if (!decoded) {
+      return null;
+    }
+    const referrers: string[] = [];
+    for (let i = 0; i < decoded.num_referrers; i++) {
+      if (decoded.referrers[i]) {
+        referrers.push(decoded.referrers[i].toBase58());
+      }
+    }
+    return { referrers };
+  } catch {
+    return null;
+  }
+}
+
 export async function getUserAta(
   mint: PublicKey,
   user: PublicKey
@@ -64,7 +98,7 @@ const AUCTION_DISCRIMINATOR = [218, 94, 247, 242, 126, 233, 131, 81];
 export async function getAllAuctions(
   connection: Connection
 ): Promise<PublicKey[]> {
-  const accounts = await connection.getProgramAccounts(PROGRAM_ID)
+  const accounts = await connection.getProgramAccounts(PROGRAM_ID);
 
   const filteredAccounts = accounts.filter((acc) => {
     const data = acc.account.data;
