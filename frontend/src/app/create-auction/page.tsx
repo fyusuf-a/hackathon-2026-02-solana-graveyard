@@ -35,7 +35,7 @@ function CreateAuctionModal({
   const wallet = useWallet();
 
   const [seed, setSeed] = useState(generateRandomSeed());
-  const [startTimeMinutes, setStartTimeMinutes] = useState("1");
+  const [startTimeMinutes, setStartTimeMinutes] = useState("0");
   const [durationMinutes, setDurationMinutes] = useState("60");
   const [minPrice, setMinPrice] = useState("0");
   const [minIncrement, setMinIncrement] = useState("0");
@@ -73,6 +73,12 @@ function CreateAuctionModal({
       let referralStructure = null;
       const discountBpsNum = parseInt(discountBps);
       const feeBpsNum = parseInt(feeBps);
+
+      if (discountBpsNum >= feeBpsNum && discountBpsNum > 0 && feeBpsNum > 0) {
+        setError("Discount must be less than fee");
+        setSubmitting(false);
+        return;
+      }
 
       if (discountBpsNum > 0 || feeBpsNum > 0) {
         referralStructure = {
@@ -135,6 +141,7 @@ function CreateAuctionModal({
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/*
             <div>
               <label className="block text-gray-400 text-sm mb-1">Seed</label>
               <div className="flex gap-2">
@@ -150,6 +157,7 @@ function CreateAuctionModal({
                 </button>
               </div>
             </div>
+            */}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -179,6 +187,19 @@ function CreateAuctionModal({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  Min Price (SOL)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  required
+                />
+              </div>
               <div>
                 <label className="block text-gray-400 text-sm mb-1">
                   Min Increment (SOL)

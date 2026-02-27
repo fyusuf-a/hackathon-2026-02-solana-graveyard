@@ -29,7 +29,10 @@ export type Auction = {
 };
 
 export function computeBid(auction: Auction): number {
-  const basePrice = auction.currentBid ? auction.currentBid : auction.minPrice;
+  if (!auction.currentBid) {
+    return auction.minPrice === 0 ? 1 : auction.minPrice;
+  }
+  const basePrice = auction.currentBid;
   const increment = auction.minIncrement > 0 ? auction.minIncrement : 1;
   return basePrice + increment;
 }

@@ -161,6 +161,12 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
       const vault = await getVaultPda(seed);
 
       let referrerWhitelist: PublicKey | null = null;
+      try {
+        referrerWhitelist = await getReferrerWhitelistPda(seed);
+        console.log("Referrer whitelist address:", referrerWhitelist.toString());
+      }
+      catch {}
+
       let referrerKey: PublicKey | null = null;
 
       if (referrer) {
@@ -172,7 +178,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
         }
       }
 
-      await program.methods
+      const tx = await program.methods
         .bid(seed, new BN(bidAmount))
         .accountsStrict({
           bidder: wallet.publicKey,
@@ -186,6 +192,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
           systemProgram: web3.SystemProgram.programId,
         })
         .rpc();
+      console.log("Bid transaction:", tx);
 
       const auctionAddresses = await getAllAuctions(connection);
       const accountInfos = await connection.getMultipleAccountsInfo(
@@ -278,7 +285,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
       const auctionAddress = await getAuctionPda(seed);
       const referrerWhitelist = await getReferrerWhitelistPda(seed);
 
-      await program.methods
+      const tx = await program.methods
         .whitelistReferrer(seed)
         .accountsStrict({
           maker: wallet.publicKey,
@@ -288,6 +295,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
           systemProgram: web3.SystemProgram.programId,
         })
         .rpc();
+      console.log("Whitelist referrer tx:", tx);
 
       alert("Referrer whitelisted successfully!");
     } catch (e) {

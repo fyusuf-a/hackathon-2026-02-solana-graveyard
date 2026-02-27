@@ -1,5 +1,3 @@
-"use client";
-
 import { Auction, computeBid } from "@/utils/bidComputer";
 import { getReferrerWhitelistAccount } from "@/utils/program";
 import { BN } from "@coral-xyz/anchor";
@@ -56,7 +54,10 @@ export default function AuctionCard({
   const isMaker = currentWallet && auction.maker === currentWallet.toString();
 
   const minBid = useMemo(() => {
-    return computeBid(auction);
+    console.log("Computing min bid for auction:", auction);
+    const minbid = computeBid(auction);
+    console.log("Computed min bid:", minbid);
+    return minbid;
   }, [auction]);
 
   const handleOpenModal = () => {
@@ -67,6 +68,7 @@ export default function AuctionCard({
   };
 
   const handleConfirmBid = () => {
+    console.log(minBid);
     const amount = parseInt(bidAmount);
     if (isNaN(amount) || amount < minBid) {
       setError(`Bid must be at least ${formatLamports(minBid)}`);
