@@ -1,0 +1,118 @@
+"use client";
+
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { formatDistanceToNow, formatDistance } from "date-fns";
+import { useMemo } from "react";
+
+interface AuctionCardProps {
+  auction: {
+    address: PublicKey;
+    seed: number;
+    mint: string;
+    maker: string;
+    currentBidder: string | null;
+    currentBid: number | null;
+    minPrice: number;
+    minIncrement: number;
+    startTime: number;
+    deadline: number;
+  };
+  onBid: (auction: AuctionCardProps["auction"]) => void;
+}
+
+function formatLamports(lamports: number): string {
+  const sol = lamports / LAMPORTS_PER_SOL;
+  if (sol >= 1) {
+    return `${sol.toFixed(4)} SOL`;
+  }
+  return `${lamports.toLocaleString()} lamports`;
+}
+
+function formatTimeStatus(startTime: number): string {
+  const startDate = new Date(startTime * 1000);
+  const now = new Date();
+
+  if (startTime * 1000 > Date.now()) {
+    return `Starts in ${formatDistance(startDate, now)}`;
+  }
+
+  return `Started ${formatDistanceToNow(startDate)} ago`;
+}
+
+export default function AuctionCard({ auction, onBid }: AuctionCardProps) {
+  const now = Math.floor(Date.now() / 1000);
+  const isLive = auction.deadline > now;
+
+  const minBid = useMemo(() => {
+      const basePrice = auction.currentBid ? auction.currentBid : auction.minPrice;
+      const increment = auction.minIncrement > 0 ? auction.minIncrement : 1;
+    console.log("Calculating minBid:", basePrice + increment);
+      return basePrice + increment;
+  }, [auction.currentBid, auction.minIncrement, auction.minPrice]);
+
+  return (
+    <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-white font-semibold">
+            Mint: {auction.mint.slice(0, 8)}...{auction.mint.slice(-4)}
+          </p>
+          <p className="text-gray-400 text-sm">
+            Maker: {auction.maker.slice(0, 8)}...
+            {auction.maker.slice(-4)}
+          </p>
+          <p className="text-gray-400 text-sm">
+            Min Price: {formatLamports(auction.minPrice)}
+          </p>
+          <p className="text-gray-400 text-sm">
+            Min Increment: {formatLamports(auction.minIncrement)}
+          </p>
+          {isLive && (
+            <>
+              <p className="text-gray-400 text-sm">
+                {formatTimeStatus(auction.startTime)}
+              </p>
+              <p className="text-gray-400 text-sm">
+                Ends{" "}
+                {formatDistanceToNow(new Date(auction.deadline * 1000), {
+                  addSuffix: true,
+                })}
+              </p>
+            </>
+          )}
+          {!isLive && (
+            <p className="text-gray-400 text-sm">
+              Ended{" "}
+              {formatDistanceToNow(new Date(auction.deadline * 1000), {
+                addSuffix: true,
+              })}
+            </p>
+          )}
+        </div>
+        <div className="text-right">
+          {auction.currentBid ? (
+            <>
+              <p className="text-purple-400 font-semibold">
+                {formatLamports(auction.currentBid)}
+              </p>
+              <p className="text-gray-400 text-sm">
+                by {auction.currentBidder?.slice(0, 4)}...
+                {auction.currentBidder?.slice(-4)}
+              </p>
+            </>
+          ) : (
+            <p className="text-gray-500">No bids yet</p>
+          )}
+          {isLive && (
+            <button
+              onClick={() => onBid(auction)}
+              className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm"
+            >
+              Bid {formatLamports(minBid)}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
