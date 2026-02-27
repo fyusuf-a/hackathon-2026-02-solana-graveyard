@@ -71,6 +71,16 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
 
               const nft = await fetchNFTByMint(decoded.mint.toString());
 
+              let referralStructure = null;
+              if (decoded.referral_structure) {
+                referralStructure = {
+                  baseFeeBps:
+                    Number(decoded.referral_structure.base_fee_bps) || 0,
+                  buyerDiscountBps:
+                    Number(decoded.referral_structure.buyer_discount_bps) || 0,
+                };
+              }
+
               auctionData.push({
                 address,
                 seed: Number(decoded.seed) || 0,
@@ -87,6 +97,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
                 startTime: Number(decoded.start_time) || 0,
                 deadline: Number(decoded.deadline) || 0,
                 nft,
+                referralStructure,
               });
             }
           } catch (e) {
@@ -105,7 +116,11 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
     fetchAuctions();
   }, [connection, wallet.publicKey, onlyMine]);
 
-  const handleBid = async (auction: Auction) => {
+  const handleBid = async (
+    auction: Auction,
+    bidAmount: number,
+    referrer?: string
+  ) => {
     if (!wallet.publicKey || !wallet.signTransaction) {
       alert("Please connect your wallet");
       return;
@@ -115,11 +130,28 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
       ? Math.max(auction.currentBid + auction.minIncrement, auction.minPrice)
       : auction.minPrice;
 
+    if (bidAmount < minBid) {
+      alert(`Bid must be at least ${minBid} lamports`);
+      return;
+    }
+
     try {
       const program = getProgram(connection, wallet as any);
       const seed = new BN(auction.seed.toString());
 
       const vault = await getVaultPda(seed);
+
+      let referrerWhitelist: PublicKey | null = null;
+      let referrerKey: PublicKey | null = null;
+
+      if (referrer) {
+        try {
+          referrerKey = new PublicKey(referrer);
+        } catch {
+          alert("Invalid referrer public key");
+          return;
+        }
+      }
 
       await program.methods
         .bid(seed, new BN(bidAmount))
@@ -130,8 +162,8 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
           precedingBidder: auction.currentBidder
             ? new PublicKey(auction.currentBidder)
             : null,
-          referrerWhitelist: null,
-          referrer: null,
+          referrerWhitelist: referrerWhitelist,
+          referrer: referrerKey,
           systemProgram: web3.SystemProgram.programId,
         })
         .rpc();
@@ -150,6 +182,17 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
           const decoded = decodeAuction(Buffer.from(accountInfo.data));
           if (decoded.mint) {
             const nft = await fetchNFTByMint(decoded.mint.toString());
+
+            let referralStructure = null;
+            if (decoded.referral_structure) {
+              referralStructure = {
+                baseFeeBps:
+                  Number(decoded.referral_structure.base_fee_bps) || 0,
+                buyerDiscountBps:
+                  Number(decoded.referral_structure.buyer_discount_bps) || 0,
+              };
+            }
+
             auctionData.push({
               address,
               seed: Number(decoded.seed) || 0,
@@ -166,6 +209,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
               startTime: Number(decoded.start_time) || 0,
               deadline: Number(decoded.deadline) || 0,
               nft,
+              referralStructure,
             });
           }
         } catch (e) {

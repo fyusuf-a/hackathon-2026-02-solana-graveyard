@@ -7,6 +7,11 @@ export type NFTInfo = {
   uri: string;
 };
 
+export type ReferralStructure = {
+  baseFeeBps: number;
+  buyerDiscountBps: number;
+};
+
 export type Auction = {
   address: PublicKey;
   seed: number;
@@ -19,6 +24,7 @@ export type Auction = {
   startTime: number;
   deadline: number;
   nft: NFTInfo | null;
+  referralStructure: ReferralStructure | null;
 };
 
 export function computeBid(auction: Auction): number {

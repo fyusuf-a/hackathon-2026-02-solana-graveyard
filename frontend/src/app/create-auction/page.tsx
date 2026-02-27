@@ -39,6 +39,8 @@ function CreateAuctionModal({
   const [durationMinutes, setDurationMinutes] = useState("60");
   const [minPrice, setMinPrice] = useState("0");
   const [minIncrement, setMinIncrement] = useState("0");
+  const [discountBps, setDiscountBps] = useState("0");
+  const [feeBps, setFeeBps] = useState("0");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,6 +70,17 @@ function CreateAuctionModal({
         parseFloat(minIncrement) * web3.LAMPORTS_PER_SOL
       );
 
+      let referralStructure = null;
+      const discountBpsNum = parseInt(discountBps);
+      const feeBpsNum = parseInt(feeBps);
+
+      if (discountBpsNum > 0 || feeBpsNum > 0) {
+        referralStructure = {
+          baseFeeBps: feeBpsNum * 100,
+          buyerDiscountBps: discountBpsNum * 100,
+        };
+      }
+
       const auction = await getAuctionPda(seedBN);
       const vault = await getVaultPda(seedBN);
       const userAta = await getUserAta(mint, wallet.publicKey);
@@ -80,7 +93,7 @@ function CreateAuctionModal({
           deadline,
           minPriceLamports,
           minIncrementLamports,
-          null
+          referralStructure
         )
         .accountsStrict({
           user: wallet.publicKey,
@@ -168,19 +181,6 @@ function CreateAuctionModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-400 text-sm mb-1">
-                  Min Price (SOL)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-1">
                   Min Increment (SOL)
                 </label>
                 <input
@@ -190,6 +190,39 @@ function CreateAuctionModal({
                   onChange={(e) => setMinIncrement(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
                   required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  Fee (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={feeBps}
+                  onChange={(e) => setFeeBps(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  Discount (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={discountBps}
+                  onChange={(e) => setDiscountBps(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  placeholder="0"
                 />
               </div>
             </div>

@@ -3,12 +3,12 @@
 import { Auction, computeBid } from "@/utils/bidComputer";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { formatDistanceToNow, formatDistance } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface AuctionCardProps {
   auction: Auction;
   currentWallet: PublicKey | null;
-  onBid: (auction: Auction) => void;
+  onBid: (auction: Auction, bidAmount: number, referrer?: string) => void;
 }
 
 function formatLamports(lamports: number): string {
@@ -35,6 +35,11 @@ export default function AuctionCard({
   currentWallet,
   onBid,
 }: AuctionCardProps) {
+  const [showModal, setShowModal] = useState(false);
+  const [bidAmount, setBidAmount] = useState("");
+  const [referrer, setReferrer] = useState("");
+  const [error, setError] = useState("");
+
   const now = Math.floor(Date.now() / 1000);
   const isLive = auction.deadline > now;
   const isMaker = currentWallet && auction.maker === currentWallet.toString();
@@ -42,6 +47,35 @@ export default function AuctionCard({
   const minBid = useMemo(() => {
     return computeBid(auction);
   }, [auction]);
+
+  const handleOpenModal = () => {
+    setBidAmount(minBid.toString());
+    setReferrer("");
+    setError("");
+    setShowModal(true);
+  };
+
+  const handleConfirmBid = () => {
+    const amount = parseInt(bidAmount);
+    if (isNaN(amount) || amount < minBid) {
+      setError(`Bid must be at least ${formatLamports(minBid)}`);
+      return;
+    }
+
+    let referrerKey: string | undefined;
+    if (referrer.trim()) {
+      try {
+        new PublicKey(referrer.trim());
+        referrerKey = referrer.trim();
+      } catch {
+        setError("Invalid referrer public key");
+        return;
+      }
+    }
+
+    setShowModal(false);
+    onBid(auction, amount, referrerKey);
+  };
 
   return (
     <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
@@ -80,6 +114,16 @@ export default function AuctionCard({
           <p className="text-gray-400 text-sm">
             Min Increment: {formatLamports(auction.minIncrement)}
           </p>
+          {auction.referralStructure && (
+            <>
+              <p className="text-gray-400 text-sm">
+                Discount: {auction.referralStructure.buyerDiscountBps / 100}%
+              </p>
+              <p className="text-gray-400 text-sm">
+                Fee: {auction.referralStructure.baseFeeBps / 100}%
+              </p>
+            </>
+          )}
           {isLive && (
             <p className="text-gray-400 text-sm">
               Ends{" "}
@@ -113,9 +157,7 @@ export default function AuctionCard({
           )}
           {isLive && (
             <button
-              onClick={() => {
-                onBid(auction, minBid);
-              }}
+              onClick={handleOpenModal}
               className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm"
             >
               Bid {formatLamports(minBid)}
@@ -123,6 +165,56 @@ export default function AuctionCard({
           )}
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">Place Bid</h3>
+            <p className="text-gray-400 mb-4">
+              Minimum bid: {formatLamports(minBid)}
+            </p>
+            <div className="mb-4">
+              <label className="block text-gray-400 text-sm mb-2">
+                Bid Amount (lamports)
+              </label>
+              <input
+                type="number"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                min={minBid}
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-400 text-sm mb-2">
+                Referral Public Key (optional)
+              </label>
+              <input
+                type="text"
+                value={referrer}
+                onChange={(e) => setReferrer(e.target.value)}
+                placeholder="Enter referrer wallet address"
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+              />
+            </div>
+            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBid}
+                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+              >
+                Confirm Bid
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
