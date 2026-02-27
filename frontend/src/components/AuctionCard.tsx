@@ -1,13 +1,14 @@
 "use client";
 
 import { Auction, computeBid } from "@/utils/bidComputer";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { formatDistanceToNow, formatDistance } from "date-fns";
 import { useMemo } from "react";
 
 interface AuctionCardProps {
-  auction: Auction;
-  onBid: (auction: AuctionCardProps["auction"], amount: number) => void;
+  auction: Auction,
+  currentWallet: PublicKey | null;
+  onBid: (auction: Auction) => void;
 }
 
 function formatLamports(lamports: number): string {
@@ -29,9 +30,14 @@ function formatTimeStatus(startTime: number): string {
   return `Started ${formatDistanceToNow(startDate)} ago`;
 }
 
-export default function AuctionCard({ auction, onBid }: AuctionCardProps) {
+export default function AuctionCard({
+  auction,
+  currentWallet,
+  onBid,
+}: AuctionCardProps) {
   const now = Math.floor(Date.now() / 1000);
   const isLive = auction.deadline > now;
+  const isMaker = currentWallet && auction.maker === currentWallet.toString();
 
   const minBid = useMemo(() => {
     return computeBid(auction);
@@ -45,8 +51,10 @@ export default function AuctionCard({ auction, onBid }: AuctionCardProps) {
             Mint: {auction.mint.slice(0, 8)}...{auction.mint.slice(-4)}
           </p>
           <p className="text-gray-400 text-sm">
-            Maker: {auction.maker.slice(0, 8)}...
-            {auction.maker.slice(-4)}
+            Maker:{" "}
+            {isMaker
+              ? "you"
+              : `${auction.maker.slice(0, 8)}...${auction.maker.slice(-4)}`}
           </p>
           <p className="text-gray-400 text-sm">
             Min Price: {formatLamports(auction.minPrice)}

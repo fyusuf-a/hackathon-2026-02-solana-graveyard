@@ -26,7 +26,6 @@ function decodeAuction(data: Buffer): any {
   const decoder = new BorshAccountsCoder(idl as any);
   try {
     const auction = decoder.decode("Auction", data);
-    console.log("Decoded auction:", auction);
     return auction;
   } catch (e) {
     console.error("Decode error:", e);
@@ -74,11 +73,11 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
 
           try {
             const decoded = decodeAuction(Buffer.from(accountInfo.data));
-            console.log("Decoded auction data:", decoded);
             if (decoded.mint) {
-              if (onlyMine && decoded.maker?.toString() !== wallet.publicKey?.toString()) {
-                console.log("Skipping auction not created by current user:", decoded.maker?.toString());
-                console.log("Current user:", wallet.publicKey?.toString());
+              if (
+                onlyMine &&
+                decoded.maker?.toString() !== wallet.publicKey?.toString()
+              ) {
                 continue;
               }
               auctionData.push({
@@ -98,7 +97,6 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
                 deadline: Number(decoded.deadline) || 0,
               });
             }
-            console.log("Processed auction:", auctionData);
           } catch (e) {
             console.error("Error decoding auction:", address.toString(), e);
           }
@@ -126,8 +124,6 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
       const seed = new BN(auction.seed.toString());
 
       const vault = await getVaultPda(seed);
-
-      console.log(seed, vault.toString(), bidAmount);
 
       await program.methods
         .bid(seed, new BN(bidAmount))
@@ -234,6 +230,7 @@ export default function AuctionsList({ onlyMine }: { onlyMine: boolean }) {
             <AuctionCard
               key={auction.address.toString()}
               auction={auction}
+              currentWallet={wallet.publicKey}
               onBid={handleBid}
             />
           ))}
