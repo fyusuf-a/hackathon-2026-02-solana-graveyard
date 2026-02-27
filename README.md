@@ -23,6 +23,18 @@ npx ts-node scripts/create-nfts.ts
 npx ts-node scripts/create-auction.ts
 ```
 
+## Testing
+
+The program is well tested. To run the tests, simply run:
+
+```bash
+surfpool start
+```
+
+```bash
+anchor test --skip-local-validator --skip-deploy 
+```
+
 ## Mechanism
 
 Referrers are whitelisted by the maker.
