@@ -59,4 +59,22 @@ export async function getVaultAta(
   )[0];
 }
 
+const AUCTION_DISCRIMINATOR = [218, 94, 247, 242, 126, 233, 131, 81];
+
+export async function getAllAuctions(
+  connection: Connection
+): Promise<PublicKey[]> {
+  const accounts = await connection.getProgramAccounts(PROGRAM_ID)
+
+  const filteredAccounts = accounts.filter((acc) => {
+    const data = acc.account.data;
+    return (
+      data.length > 8 &&
+      data.slice(0, 8).equals(Buffer.from(AUCTION_DISCRIMINATOR))
+    );
+  });
+
+  return filteredAccounts.map((acc) => acc.pubkey);
+}
+
 export { PROGRAM_ID };
