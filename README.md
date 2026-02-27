@@ -48,6 +48,8 @@ They enable the bidder to input their public key during the bidding process.
 
 ### Contract
 
+- Make the vibecoded frontend more functional and user-friendly.
+- Add the ability to remove a referrer from the whitelist.
 - Find a more bullet proof method that the public whitelisting of referrers. An informed player is incentivized to use any referrer public key, which would entice them to observe the calls to the contract to determine which public keys are whitelisted. Some part of the system should maybe be moved off-chain.
 * Abstract the referral system to be used in other contexts.
 * Implement a simpler instant-sale mechanism with referrals.
