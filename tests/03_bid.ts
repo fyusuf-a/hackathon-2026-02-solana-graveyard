@@ -156,7 +156,7 @@ describe("Bids", () => {
     });
   });
 
-  /*describe("After the end of the auction", () => {
+  describe("After the end of the auction", () => {
     before(async () => {
       const now = new Date().getTime();
       await new Promise((resolve) => setTimeout(resolve, auctionEnd * 1000 - now + 1500));
@@ -165,18 +165,19 @@ describe("Bids", () => {
     it("No bet can be made", async () => {
       umi.use(signerIdentity(bidder1));
       await assert.rejects(async () => {
-        await program.methods.bid(new BN(100))
-          .accounts({
+        await program.methods.bid(seed, new anchor.BN(100))
+          .accountsStrict({
             bidder: bidder1.publicKey,
-            mint: nftMint.publicKey,
             auction,
             vault,
-            vaultState,
             precedingBidder: bidder2.publicKey,
+            referrerWhitelist: null,
+            referrer: null,
+            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([web3JsBidder1Signer])
           .rpc();
       }, () => true, "Bid should fail");
     });
-  });*/
+  })
 });
