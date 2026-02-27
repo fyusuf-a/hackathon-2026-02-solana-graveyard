@@ -16,7 +16,10 @@ impl Referrers {
     }
 
     pub fn whitelist_referrer(&mut self, account: &AccountInfo) -> Result<()> {
-        require!((self.num_referrers as usize) < self.referrers.len(), AuctionError::ReferrersListFull);
+        require!(
+            (self.num_referrers as usize) < self.referrers.len(),
+            AuctionError::ReferrersListFull
+        );
         require!(!self.contains(account), AuctionError::ExistingReferrer);
 
         self.referrers[self.num_referrers as usize] = account.key();

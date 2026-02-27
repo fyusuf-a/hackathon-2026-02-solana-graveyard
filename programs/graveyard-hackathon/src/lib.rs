@@ -2,10 +2,10 @@ use anchor_lang::prelude::*;
 
 declare_id!("FMbPxmEm3fDtPzH8RTpqWx9xT1bd3Bio38vg7MrXr9Rv");
 
+mod errors;
 mod instructions;
 mod state;
 mod utils;
-mod errors;
 
 use instructions::*;
 use state::*;
@@ -20,8 +20,24 @@ pub mod graveyard_hackathon {
         ctx.accounts.initialize(&ctx.bumps)
     }
 
-    pub fn create_auction(ctx: Context<CreateAuction>, seed: u64, start_time: i64, deadline: i64, min_price: u64, min_increment: u64, referral_structure: Option<ReferralStructure>) -> Result<()> {
-        ctx.accounts.create(seed, start_time, deadline, min_price, min_increment, referral_structure, &ctx.bumps)
+    pub fn create_auction(
+        ctx: Context<CreateAuction>,
+        seed: u64,
+        start_time: i64,
+        deadline: i64,
+        min_price: u64,
+        min_increment: u64,
+        referral_structure: Option<ReferralStructure>,
+    ) -> Result<()> {
+        ctx.accounts.create(
+            seed,
+            start_time,
+            deadline,
+            min_price,
+            min_increment,
+            referral_structure,
+            &ctx.bumps,
+        )
     }
 
     pub fn bid(ctx: Context<Bid>, seed: u64, lamports: u64) -> Result<()> {

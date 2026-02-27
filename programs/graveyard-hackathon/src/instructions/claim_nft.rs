@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface, transfer_checked, TransferChecked}
+    associated_token::AssociatedToken,
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::state::Auction;
 use crate::errors::AuctionError;
+use crate::state::Auction;
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -46,7 +47,10 @@ pub struct ClaimNFT<'info> {
 impl<'info> ClaimNFT<'info> {
     pub fn claim_nft(&mut self, seed: u64) -> Result<()> {
         let current_time = Clock::get()?.unix_timestamp;
-        require!(current_time >= self.auction.deadline, AuctionError::AuctionNotEnded);
+        require!(
+            current_time >= self.auction.deadline,
+            AuctionError::AuctionNotEnded
+        );
 
         match self.auction.current_bidder {
             Some(bidder) => {
@@ -64,11 +68,7 @@ impl<'info> ClaimNFT<'info> {
         }
 
         let seed_bytes = seed.to_le_bytes();
-        let signer_seeds: &[&[&[u8]]] = &[&[
-            b"auction",
-            seed_bytes.as_ref(),
-            &[self.auction.bump],
-        ]];
+        let signer_seeds: &[&[&[u8]]] = &[&[b"auction", seed_bytes.as_ref(), &[self.auction.bump]]];
 
         let cpi_ctx = CpiContext::new_with_signer(
             self.token_program.to_account_info(),
@@ -78,7 +78,7 @@ impl<'info> ClaimNFT<'info> {
                 to: self.signer_ata.to_account_info(),
                 authority: self.auction.to_account_info(),
             },
-            signer_seeds
+            signer_seeds,
         );
         transfer_checked(cpi_ctx, 1, 0)
     }

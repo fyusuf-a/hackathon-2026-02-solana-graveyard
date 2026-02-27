@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{state::{Auction, Referrers}};
+use crate::state::{Auction, Referrers};
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -31,6 +31,7 @@ pub struct WhitelistReferrer<'info> {
 
 impl<'info> WhitelistReferrer<'info> {
     pub fn whitelist_referrer(&mut self) -> Result<()> {
-        self.referrer_whitelist.whitelist_referrer(&self.referrer.to_account_info())
+        self.referrer_whitelist
+            .whitelist_referrer(&self.referrer.to_account_info())
     }
 }

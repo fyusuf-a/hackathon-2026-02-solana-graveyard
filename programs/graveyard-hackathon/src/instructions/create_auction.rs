@@ -1,9 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface, transfer_checked, TransferChecked}
+    associated_token::AssociatedToken,
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::{errors::AuctionError, state::{Auction, ReferralStructure}, utils::{FundAccountArgs, NoData, fund_account}};
+use crate::{
+    errors::AuctionError,
+    state::{Auction, ReferralStructure},
+    utils::{fund_account, FundAccountArgs, NoData},
+};
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -62,11 +67,13 @@ impl<'info> CreateAuction<'info> {
     ) -> Result<()> {
         match referral_structure {
             Some(ref structure) => {
-                require!(structure.buyer_discount_bps < structure.base_fee_bps, AuctionError::IncorrectFeeStructure);
+                require!(
+                    structure.buyer_discount_bps < structure.base_fee_bps,
+                    AuctionError::IncorrectFeeStructure
+                );
             }
-            _ => ()
+            _ => (),
         }
-
 
         self.auction.set_inner(Auction {
             seed,
