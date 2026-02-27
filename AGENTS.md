@@ -8,33 +8,50 @@ English auction smart contract on Solana with referral system:
 
 - **Anchor** framework for Solana smart contracts
 - **Rust** for on-chain programs
-- **TypeScript** for tests and client code
-- **Mocha/Chai** for testing
+- **TypeScript** with Mocha/Chai for tests
+- **Metaplex Umi** for NFT operations
+- **Prettier** for formatting
 
 ## Build, Test, and Lint Commands
 
 ```bash
-# Build
+# Build the program
 anchor build
-anchor build --program-name graveyard_hackathon
 
 # Run all tests
 anchor test
 yarn test
 
-# Run single test file
+# Run single test file (recommended for debugging)
 yarn run ts-mocha -p ./tsconfig.json -t 1000000 "tests/01_initialize.ts"
 
 # Run specific test with grep
-yarn run ts-mocha -p ./tsconfig.json -t 1000000 "tests/**/*.ts" --grep "Program sucessfully initializes"
+yarn run ts-mocha -p ./tsconfig.json -t 1000000 "tests/**/*.ts" --grep "Program successfully initializes"
 
-# Linting
-yarn lint            # Check formatting
-yarn lint:fix        # Fix formatting issues
+# Linting (Prettier)
+yarn lint
+yarn lint:fix
 
-# Other
+# Other commands
 anchor deploy
 anchor keys list
+```
+
+## Project Structure
+
+```
+programs/graveyard-hackathon/src/
+  ├── lib.rs              # Program entry, declare_id, instruction dispatch
+  ├── errors.rs           # Custom errors (#[error_code] enum)
+  ├── utils.rs            # Utility functions
+  ├── instructions/      # Instruction handlers (each instruction = 1 file)
+  │   ├── initialize.rs, create_auction.rs, bid.rs
+  │   ├── claim_nft.rs, claim_payment.rs, whitelist_referrer.rs
+  └── state/              # Account types with #[account] and #[derive(InitSpace)]
+      ├── config.rs, english_auction.rs, referrers.rs
+tests/
+  ├── lib.ts              # Shared utilities (airdrop, NFT creation, auction setup)
+  └── 01_*.ts, 02_*.ts... # Numbered test files (ordered by dependencies)
 ```
 
 ## Rust (Anchor) Code Style
@@ -47,14 +64,6 @@ use anchor_lang::system_program::{transfer, Transfer};
 use crate::state::Config;
 use crate::errors::AuctionError;
 ```
-
-### Naming
-
-- Modules: `snake_case` (`mod instructions;`)
-- Functions: `snake_case` (`fn initialize()`)
-- Types/Structs: `PascalCase` (`struct Initialize`, `enum AuctionError`)
-- Variables: `snake_case` (`let current_bid`)
-- Macros: `kebab-case` (`#[account]`, `#[derive]`)
 
 ### Account Structs
 
@@ -79,13 +88,10 @@ pub enum AuctionError {
     #[msg("Bid is too low")]
     BidTooLow,
 }
-
-// Usage
-require!(time_elapsed >= 0, AuctionError::AuctionNotStarted);
-require!(lamports >= current_bid + min_increment, AuctionError::BidTooLow);
+// Usage: require!(condition, AuctionError::ErrorCode);
 ```
 
-### Space Calculation
+### State with InitSpace
 
 ```rust
 #[account]
@@ -94,8 +100,16 @@ pub struct Config {
     pub admin: Pubkey,
     pub bump: u8,
 }
-// space = Config::DISCRIMINATOR.len() + Config::INIT_SPACE
+// Space: Config::DISCRIMINATOR.len() + Config::INIT_SPACE
 ```
+
+### Naming Conventions
+
+- Modules: `snake_case` (`mod instructions;`)
+- Functions: `snake_case` (`fn initialize()`)
+- Types/Structs: `PascalCase` (`struct Initialize`, `enum AuctionError`)
+- Variables: `snake_case` (`let current_bid`)
+- Macros: `kebab-case` (`#[account]`, `#[derive]`)
 
 ## TypeScript Test Code Style
 
@@ -106,13 +120,35 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { GraveyardHackathon } from "../target/types/graveyard_hackathon";
 import { expect } from "chai";
+import { createNft, setupAuction, airdrop_if_needed } from "./lib";
 ```
 
-### Naming
+### Anchor Client Usage
 
-- Files: `kebab-case` (`01_initialize.ts`)
-- Variables/functions: `camelCase` (`provider`, `setupAuction`)
-- Types: `PascalCase` (`AuctionConfigResult`)
+```typescript
+const program = anchor.workspace
+  .GraveyardHackathon as Program<GraveyardHackathon>;
+
+// Use accountsStrict (recommended)
+await program.methods
+  .initialize()
+  .accountsStrict({
+    admin: admin.publicKey,
+    config: pda,
+    systemProgram: SystemProgram.programId,
+  })
+  .signers([admin])
+  .rpc();
+
+// BN types - always use new anchor.BN(value)
+new anchor.BN(1000);
+
+// PDA derivation
+const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("auction"), seed.toArrayLike(Buffer, "le", 8)],
+  program.programId
+);
+```
 
 ### Test Structure
 
@@ -127,44 +163,19 @@ describe("Test Suite Name", () => {
 });
 ```
 
-### Anchor Client Usage
+### Naming
 
-```typescript
-const program = anchor.workspace.GraveyardHackathon as Program<GraveyardHackathon>;
-
-// Use accountsStrict (recommended)
-await program.methods.initialize()
-  .accountsStrict({ admin: admin.publicKey, ... })
-  .signers([admin])
-  .rpc();
-
-// BN types
-new anchor.BN(value)
-```
-
-## Project Structure
-
-```
-programs/graveyard-hackathon/src/
-  ├── lib.rs              # Program entry point
-  ├── errors.rs           # Custom errors
-  ├── utils.rs            # Utility functions
-  ├── instructions/       # Instruction handlers
-  │   ├── initialize.rs, create_auction.rs, bid.rs
-  │   ├── claim_nft.rs, claim_payment.rs, whitelist_referrer.rs
-  └── state/              # Account types
-      ├── config.rs, english_auction.rs, referrers.rs
-tests/
-  ├── lib.ts              # Shared test utilities
-  └── 01_initialize.ts, 02_create_auctions.ts, 03_bid.ts...
-```
+- Files: `kebab-case` with number prefix (`01_initialize.ts`)
+- Variables/functions: `camelCase` (`provider`, `setupAuction`)
+- Types: `PascalCase` (`AuctionConfigResult`)
 
 ## Key Conventions
 
-1. **Regenerate IDL after building**: Run `anchor build` to update `target/types/`
-2. **Use `accountsStrict`** over `.accounts()` for explicit validation
-3. **Handle BN types**: Use `new anchor.BN(value)` in TypeScript
+1. **Regenerate IDL**: Run `anchor build` after Rust changes to update `target/types/`
+2. **Use `accountsStrict`**: Over `.accounts()` for explicit validation
+3. **BN types**: Use `new anchor.BN(value)` in TypeScript
 4. **Rent exemption**: Ensure PDAs have enough lamports
 5. **Error messages**: Use descriptive `#[msg("...")]` attributes
-6. **Test ordering**: Files numbered 01*, 02* - may depend on previous tests
-7. **PDA derivation**: Use `anchor.web3.PublicKey.findProgramAddressSync`
+6. **Test ordering**: Files numbered 01*, 02* - tests may depend on previous state
+7. **PDA seeds**: Use `Buffer.from("seed")` for string seeds
+8. **Umi integration**: Use `toWeb3JsKeypair()` and `toWeb3JsPublicKey()` for Metaplex interop
