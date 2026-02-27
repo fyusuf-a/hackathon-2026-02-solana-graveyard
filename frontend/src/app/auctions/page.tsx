@@ -5,6 +5,7 @@ import { useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getAllAuctions } from "@/utils/program";
 import { BorshAccountsCoder } from "@coral-xyz/anchor";
+import { formatDistanceToNow, formatDistance } from "date-fns";
 import idl from "../../../../target/idl/graveyard_hackathon.json";
 
 interface AuctionData {
@@ -16,6 +17,17 @@ interface AuctionData {
   minPrice: number;
   startTime: number;
   deadline: number;
+}
+
+function formatTimeStatus(startTime: number): string {
+  const startDate = new Date(startTime * 1000);
+  const now = new Date();
+
+  if (startTime * 1000 > Date.now()) {
+    return `Starts in ${formatDistance(startDate, now)}`;
+  }
+
+  return `Started ${formatDistanceToNow(startDate)} ago`;
 }
 
 function decodeAuction(data: Buffer): any {
@@ -34,6 +46,14 @@ export default function AuctionsPage() {
   const { connection } = useConnection();
   const [auctions, setAuctions] = useState<AuctionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     async function fetchAuctions() {
@@ -122,6 +142,15 @@ export default function AuctionsPage() {
                   </p>
                   <p className="text-gray-400 text-sm">
                     Min Price: {(auction.minPrice / 1e9).toFixed(4)} SOL
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    {formatTimeStatus(auction.startTime)}
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    Ends {" "}
+                    {formatDistanceToNow(new Date(auction.deadline * 1000), {
+                      addSuffix: true,
+                    })}
                   </p>
                 </div>
                 <div className="text-right">
