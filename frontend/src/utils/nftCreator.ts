@@ -4,7 +4,6 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  TransactionInstruction,
   SystemProgram,
 } from "@solana/web3.js";
 import {
@@ -17,11 +16,14 @@ import {
 
 const LOCALNET_ENDPOINT = "http://localhost:8899";
 
+/*
 function utf8StringToBytes(str: string): number[] {
   const encoder = new TextEncoder();
   return Array.from(encoder.encode(str));
 }
+*/
 
+/*
 function createMetadataInstruction(
   metadataProgramId: PublicKey,
   metadata: PublicKey,
@@ -77,6 +79,7 @@ function createMetadataInstruction(
     data: data.slice(0, offset + 2),
   });
 }
+*/
 
 export async function createTestNft(
   metadataProgramId: PublicKey,
@@ -105,6 +108,7 @@ export async function createTestNft(
     true
   );
 
+  /*
   const [metadataAddress] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("metadata"),
@@ -115,6 +119,7 @@ export async function createTestNft(
   );
 
   const metadataRent = await connection.getMinimumBalanceForRentExemption(0);
+  */
 
   const transaction = new Transaction();
 
@@ -135,6 +140,7 @@ export async function createTestNft(
     )
   );
 
+  /*
   transaction.add(
     SystemProgram.createAccount({
       fromPubkey: walletPublicKey,
@@ -163,6 +169,7 @@ export async function createTestNft(
       nftUri
     )
   );
+  */
 
   transaction.add(
     createAssociatedTokenAccountInstruction(
@@ -183,10 +190,25 @@ export async function createTestNft(
 
   transaction.partialSign(mint);
 
-  const signedTx = await signTransaction(transaction);
+  try {
+    const signedTx = await signTransaction(transaction);
 
-  const signature = await connection.sendRawTransaction(signedTx.serialize());
-  await connection.confirmTransaction(signature, "confirmed");
+    // Verify wallet signed
+    const walletSigned = signedTx.signatures.some(
+      (sig) =>
+        sig.publicKey.toBase58() === walletPublicKey.toBase58() &&
+        sig.signature !== null
+    );
+    if (!walletSigned) {
+      throw new Error("Wallet did not sign the transaction");
+    }
+
+    const signature = await connection.sendRawTransaction(signedTx.serialize());
+    await connection.confirmTransaction(signature, "confirmed");
+  } catch (err) {
+    console.error("Transaction signing failed:", err);
+    throw err;
+  }
 
   return mintPubkey.toString();
 }
